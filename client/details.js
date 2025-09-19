@@ -43,7 +43,8 @@ async function fetchNotaDetails(id) {
         errorMessage.style.display = 'none';
         notaDetails.style.display = 'none';
 
-        const response = await fetch(`/api/notas/${id}`);
+        const response = await fetch(`/api/notas/detalhes/${id}`);
+        console.log(response);
         if (!response.ok) {
             if (response.status === 404) {
                 throw new Error('NFC-e não encontrada.');

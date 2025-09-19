@@ -1,6 +1,16 @@
 // server/routes/scan.js
 const express = require('express');
 const router = express.Router();
+const { NotaFiscal, ItemNota, sequelize } = require('../models');
+
+// Função para converter formato brasileiro para decimal
+function converterParaDecimal(valor) {
+  if (!valor || valor === '') return 0;
+  // Converte vírgula para ponto e remove espaços
+  const valorLimpo = String(valor).replace(/\s/g, '').replace(',', '.');
+  const numero = parseFloat(valorLimpo);
+  return isNaN(numero) ? 0 : numero;
+}
 
 // --- Funções de Parsing e Fetch (movidas do frontend) ---
 function parseQrNfce(urlOrText) {
@@ -187,22 +197,55 @@ router.post('/process', async (req, res) => {
             
             console.log("NFC-e processada com sucesso:", nfceData);
             
-            res.json({
-                success: true,
-                data: nfceData,
-                message: 'NFC-e processada com sucesso'
-            });
+            // Salva automaticamente no banco de dados
+            try {
+                const resultadoSalvamento = await salvarNfceAutomaticamente(nfceData);
+                console.log("NFC-e salva automaticamente:", resultadoSalvamento);
+                
+                res.json({
+                    success: true,
+                    data: nfceData,
+                    message: 'NFC-e processada e salva com sucesso',
+                    salva: resultadoSalvamento
+                });
+            } catch (salvamentoError) {
+                console.error("Erro ao salvar NFC-e automaticamente:", salvamentoError);
+                // Mesmo com erro de salvamento, retorna os dados processados
+                res.json({
+                    success: true,
+                    data: nfceData,
+                    message: 'NFC-e processada com sucesso (erro ao salvar)',
+                    warning: 'Dados processados mas não salvos no banco',
+                    error: salvamentoError.message
+                });
+            }
 
         } catch (fetchError) {
             console.warn('Não foi possível buscar detalhes completos da NFC-e:', fetchError);
             
             // Retorna dados básicos mesmo se falhar o fetch
-            res.json({
-                success: true,
-                data: nfceData,
-                message: 'NFC-e processada (dados básicos do QR Code)',
-                warning: 'Detalhes adicionais não disponíveis (CORS/UF)'
-            });
+            // Salva automaticamente no banco de dados (mesmo com dados básicos)
+            try {
+                const resultadoSalvamento = await salvarNfceAutomaticamente(nfceData);
+                console.log("NFC-e salva automaticamente (dados básicos):", resultadoSalvamento);
+                
+                res.json({
+                    success: true,
+                    data: nfceData,
+                    message: 'NFC-e processada e salva (dados básicos do QR Code)',
+                    warning: 'Detalhes adicionais não disponíveis (CORS/UF)',
+                    salva: resultadoSalvamento
+                });
+            } catch (salvamentoError) {
+                console.error("Erro ao salvar NFC-e automaticamente (dados básicos):", salvamentoError);
+                res.json({
+                    success: true,
+                    data: nfceData,
+                    message: 'NFC-e processada (dados básicos do QR Code)',
+                    warning: 'Detalhes adicionais não disponíveis (CORS/UF)',
+                    error: 'Dados processados mas não salvos no banco'
+                });
+            }
         }
 
     } catch (error) {
@@ -214,5 +257,65 @@ router.post('/process', async (req, res) => {
         });
     }
 });
+
+// Função para salvar NFC-e automaticamente
+async function salvarNfceAutomaticamente(nfceData) {
+    const { chave, versao, tpAmb, cIdToken, vSig, emitente, itens } = nfceData;
+
+    // Verifica se a nota já existe
+    const notaExistente = await NotaFiscal.findOne({ where: { chave } });
+    if (notaExistente) {
+        return { 
+            status: 'duplicada', 
+            message: 'NFC-e com esta chave já foi salva anteriormente',
+            id: notaExistente.id 
+        };
+    }
+
+    // Inicia uma transação para garantir consistência
+    const transaction = await sequelize.transaction();
+
+    try {
+        // Cria a nota fiscal
+        const novaNota = await NotaFiscal.create({
+            chave,
+            versao,
+            ambiente: tpAmb,
+            cIdToken,
+            vSig,
+            cnpjEmitente: emitente?.cnpj,
+            nomeEmitente: emitente?.nome,
+            ieEmitente: emitente?.ie
+        }, { transaction });
+
+        // Cria os itens associados
+        if (itens && Array.isArray(itens)) {
+            const itensParaCriar = itens.map(item => ({
+                notaFiscalId: novaNota.id,
+                codigo: item.codigo,
+                descricao: item.descricao,
+                quantidade: converterParaDecimal(item.qtde),
+                unidade: item.un,
+                valorUnitario: converterParaDecimal(item.unitario),
+                valorTotal: converterParaDecimal(item.total)
+            }));
+            await ItemNota.bulkCreate(itensParaCriar, { transaction });
+        }
+
+        // Comita a transação
+        await transaction.commit();
+
+        return { 
+            status: 'salva', 
+            message: 'NFC-e salva com sucesso!', 
+            id: novaNota.id,
+            itensSalvos: itens ? itens.length : 0
+        };
+    } catch (err) {
+        // Reverte a transação em caso de erro
+        await transaction.rollback();
+        throw err;
+    }
+}
 
 module.exports = router;

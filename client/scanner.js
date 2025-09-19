@@ -13,8 +13,9 @@ const chaveResult = document.getElementById('chaveResult');
 const emitenteResult = document.getElementById('emitenteResult');
 const ambienteResult = document.getElementById('ambienteResult');
 const itensTableBody = document.querySelector('#itensTable tbody');
-const saveBtn = document.getElementById('saveBtn');
 const rescanBtn = document.getElementById('rescanBtn');
+const manualQrInput = document.getElementById('manualQrInput');
+const processManualBtn = document.getElementById('processManualBtn');
 
 // --- Variáveis de estado ---
 let currentStream = null;
@@ -204,10 +205,17 @@ async function onQRCodeRead(rawText) {
         if (result.success) {
             currentNfceData = result.data;
             displayResult(result.data);
-            setStatus(result.message, 'success');
             
-            // Salva automaticamente após processar
-            saveNfce();
+            // Verifica se foi salva automaticamente pelo backend
+            if (result.salva) {
+                if (result.salva.status === 'salva') {
+                    setStatus(`${result.message} (ID: ${result.salva.id})`, 'success');
+                } else if (result.salva.status === 'duplicada') {
+                    setStatus(`${result.salva.message} (ID: ${result.salva.id})`, 'info');
+                }
+            } else {
+                setStatus(result.message, 'success');
+            }
         } else {
             setStatus(result.message || 'Erro ao processar QR Code', 'error');
             resultSection.style.display = 'none';
@@ -251,6 +259,58 @@ function displayResult(data) {
 }
 
 // --- Funções de Integração com Backend ---
+async function processManualQr() {
+    const qrCode = manualQrInput.value.trim();
+    
+    if (!qrCode) {
+        setStatus('Por favor, insira um link de QR Code válido.', 'error');
+        return;
+    }
+    
+    // Validação básica de URL
+    if (!qrCode.includes('http') || !qrCode.includes('nfce')) {
+        setStatus('Por favor, insira um link válido de NFC-e.', 'error');
+        return;
+    }
+    
+    try {
+        // Desabilita o botão durante o processamento
+        processManualBtn.disabled = true;
+        processManualBtn.classList.add('processing');
+        processManualBtn.textContent = 'Processando...';
+        setStatus('Processando link manual...', 'info');
+        
+        // Adiciona um pequeno delay para mostrar a animação
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Usa a mesma função de processamento do QR Code escaneado
+        await onQRCodeRead(qrCode);
+        
+        // Limpa o campo após sucesso
+        manualQrInput.value = '';
+        
+        // Adiciona feedback visual de sucesso
+        processManualBtn.textContent = '✓ Processado!';
+        setTimeout(() => {
+            processManualBtn.textContent = 'Processar Link';
+        }, 2000);
+        
+    } catch (error) {
+        console.error("Erro ao processar link manual:", error);
+        setStatus(`Erro ao processar link: ${error.message}`, 'error');
+        
+        // Feedback visual de erro
+        processManualBtn.textContent = '✗ Erro';
+        setTimeout(() => {
+            processManualBtn.textContent = 'Processar Link';
+        }, 2000);
+    } finally {
+        // Reabilita o botão
+        processManualBtn.disabled = false;
+        processManualBtn.classList.remove('processing');
+    }
+}
+
 async function saveNfce() {
     // Usa os dados completos armazenados
     const nfceDataToSave = currentNfceData;
@@ -310,8 +370,15 @@ rescanBtn.addEventListener('click', () => {
     resultSection.style.display = 'none';
     startStream(); // Reinicia a leitura
 });
-saveBtn.addEventListener('click', saveNfce);
 cameraSelect.addEventListener('change', startStream);
+
+// Event listeners para entrada manual
+processManualBtn.addEventListener('click', processManualQr);
+manualQrInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        processManualQr();
+    }
+});
 
 // --- Inicialização ---
 (async function init() {

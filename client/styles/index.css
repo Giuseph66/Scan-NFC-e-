@@ -470,3 +470,74 @@ footer {
     padding: var(--spacing-xs);
   }
 }
+
+/* Estilos para entrada manual */
+.manual-input {
+  margin-top: 20px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.manual-input h3 {
+  margin: 0 0 15px 0;
+  color: #495057;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.input-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+#manualQrInput {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+}
+
+#manualQrInput:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+#processManualBtn {
+  padding: 12px 24px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  white-space: nowrap;
+}
+
+#processManualBtn:hover {
+  background: #218838;
+}
+
+#processManualBtn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Responsividade para entrada manual */
+@media (max-width: 768px) {
+  .input-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  #processManualBtn {
+    width: 100%;
+  }
+}

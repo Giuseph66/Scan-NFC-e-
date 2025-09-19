@@ -33,6 +33,14 @@
                     <button id="startBtn">Iniciar Leitura</button>
                     <button id="stopBtn" disabled>Parar</button>
                 </div>
+                
+                <div class="manual-input">
+                    <h3>Ou insira o link manualmente</h3>
+                    <div class="input-group">
+                        <input type="url" id="manualQrInput" placeholder="https://www.sefaz.mt.gov.br/nfce/consultanfce?p=..." autocomplete="url">
+                        <button id="processManualBtn">Processar Link</button>
+                    </div>
+                </div>
                 <div id="status" class="status-message">Aguardando permissão da câmera...</div>
             </section>
 
@@ -70,7 +78,6 @@
                     </div>
                 </div>
                 <div class="action-buttons">
-                    <button id="saveBtn">Salvar Nota</button>
                     <button id="rescanBtn">Escanear Novamente</button>
                 </div>
             </section>

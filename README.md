@@ -16,6 +16,7 @@ Um aplicativo web completo para leitura e armazenamento de **NFC-e (Nota Fiscal 
 - Extração de dados básicos do QR Code
 - Busca automática de detalhes completos via proxy
 - Parse inteligente de itens da nota fiscal
+- **Salvamento automático** no banco de dados
 
 ### 💾 **Armazenamento Local**
 - Banco SQLite para persistência offline
@@ -150,12 +151,26 @@ Content-Type: application/json
 {
   "qrCode": "http://www.sefaz.mt.gov.br/nfce/consultanfce?p=..."
 }
+
+# Resposta (com salvamento automático):
+{
+  "success": true,
+  "data": { /* dados da NFC-e */ },
+  "message": "NFC-e processada e salva com sucesso",
+  "salva": {
+    "status": "salva",
+    "message": "NFC-e salva com sucesso!",
+    "id": 123,
+    "itensSalvos": 5
+  }
+}
 ```
 
 ### **Notas Fiscais**
 ```http
 GET    /api/notas/           # Listar notas
-GET    /api/notas/:id        # Detalhes de uma nota
+GET    /api/notas/:id        # Detalhes de uma nota (ID numérico)
+GET    /api/notas/detalhes/:id  # Detalhes de uma nota (rota alternativa)
 POST   /api/notas/salvar     # Salvar nova nota
 ```
 

@@ -95,26 +95,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Rota para obter detalhes de uma NFC-e específica
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const nota = await NotaFiscal.findByPk(id, {
-      include: [{ model: ItemNota, as: 'itens' }] // Inclui os itens relacionados
-    });
-
-    if (!nota) {
-      return res.status(404).json({ message: 'NFC-e não encontrada.' });
-    }
-
-    res.json(nota);
-  } catch (error) {
-    console.error('Erro ao obter detalhes da NFC-e:', error);
-    res.status(500).json({ message: 'Erro interno ao obter detalhes da NFC-e.', error: error.message });
-  }
-});
-
 // Rota para buscar itens por nome (para a nova tela de busca)
 router.get('/itens/buscar', async (req, res) => {
   try {
@@ -228,6 +208,52 @@ router.get('/itens', async (req, res) => {
   } catch (error) {
     console.error('Erro ao listar todos os itens:', error);
     res.status(500).json({ message: 'Erro interno ao listar itens.', error: error.message });
+  }
+});
+
+// Rota para obter detalhes de uma NFC-e específica (DEVE VIR POR ÚLTIMO)
+// Usa uma rota mais específica para evitar conflitos
+router.get('/detalhes/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const nota = await NotaFiscal.findByPk(id, {
+      include: [{ model: ItemNota, as: 'itens' }] // Inclui os itens relacionados
+    });
+
+    if (!nota) {
+      return res.status(404).json({ message: 'NFC-e não encontrada.' });
+    }
+
+    res.json(nota);
+  } catch (error) {
+    console.error('Erro ao obter detalhes da NFC-e:', error);
+    res.status(500).json({ message: 'Erro interno ao obter detalhes da NFC-e.', error: error.message });
+  }
+});
+
+// Rota para obter detalhes de uma NFC-e específica por ID numérico (mantém compatibilidade)
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Verifica se é um ID numérico para evitar conflitos com rotas específicas
+    if (!/^\d+$/.test(id)) {
+      return res.status(404).json({ message: 'Rota não encontrada.' });
+    }
+
+    const nota = await NotaFiscal.findByPk(id, {
+      include: [{ model: ItemNota, as: 'itens' }] // Inclui os itens relacionados
+    });
+
+    if (!nota) {
+      return res.status(404).json({ message: 'NFC-e não encontrada.' });
+    }
+
+    res.json(nota);
+  } catch (error) {
+    console.error('Erro ao obter detalhes da NFC-e:', error);
+    res.status(500).json({ message: 'Erro interno ao obter detalhes da NFC-e.', error: error.message });
   }
 });
 
