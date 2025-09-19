@@ -231,7 +231,7 @@ Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalh
 
 ## 👨‍💻 Autor
 
-**Rick** - Desenvolvedor Full Stack
+**Giuseph** - Desenvolvedor Full Stack
 - Foco em segurança e tipagem forte
 - Arquitetura simples e modular
 - Offline-first com sincronização robusta
