@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NFC-e Scan - Detalhes</title>
+<link rel="stylesheet" href="styles/details.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Detalhes da NFC-e</h1>
+            <nav>
+                <a href="history.html">&larr; Voltar ao Histórico</a> |
+                <a href="productSearch.html">Buscar por Produto</a>
+            </nav>
+        </header>
+
+        <main>
+            <section class="details-section">
+                <div id="loadingMessage">Carregando detalhes...</div>
+                <div id="errorMessage" style="display:none; color: red;"></div>
+                
+                <div id="notaDetails" style="display:none;">
+                    <h2>Informações Gerais</h2>
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <label>ID:</label>
+                            <span id="detailId">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Chave:</label>
+                            <span id="detailChave">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Versão QR:</label>
+                            <span id="detailVersao">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Ambiente:</label>
+                            <span id="detailAmbiente">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>cIdToken:</label>
+                            <span id="detailCIdToken">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>vSig:</label>
+                            <span id="detailVSig">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Data de Leitura:</label>
+                            <span id="detailCreatedAt">-</span>
+                        </div>
+                    </div>
+
+                    <h2>Emitente</h2>
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <label>CNPJ:</label>
+                            <span id="detailCnpjEmitente">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Nome/Razão Social:</label>
+                            <span id="detailNomeEmitente">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Inscrição Estadual:</label>
+                            <span id="detailIeEmitente">-</span>
+                        </div>
+                    </div>
+
+                    <h2>Itens</h2>
+                    <div class="table-container">
+                        <table id="itensDetailTable">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Descrição</th>
+                                    <th>Qtde</th>
+                                    <th>Un</th>
+                                    <th>Unitário</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Itens serão preenchidos aqui -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 NFC-e Scan App</p>
+        </footer>
+    </div>
+
+    <script src="details.js"></script>
+</body>
+</html>

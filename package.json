@@ -1,0 +1,27 @@
+{
+  "name": "nfce-scan-app",
+  "version": "1.0.0",
+  "description": "Aplicativo para leitura e armazenamento de NFC-e via QR Code",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js"
+  },
+  "keywords": [
+    "nfce",
+    "qr-code",
+    "nodejs",
+    "express",
+    "sqlite"
+  ],
+  "author": "Seu Nome",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.6",
+    "sequelize": "^6.32.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

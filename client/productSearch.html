@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NFC-e Scan - Busca por Produto</title>
+<link rel="stylesheet" href="styles/productSearch.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Busca por Produto</h1>
+            <nav>
+                <a href="index.html">&larr; Leitor</a> |
+                <a href="history.html">Histórico</a>
+            </nav>
+        </header>
+
+        <main>
+            <section class="search-section">
+                <div class="search-bar">
+                    <input type="text" id="searchProductInput" placeholder="Digite o nome do produto...">
+                    <button id="searchProductBtn">Buscar</button>
+                </div>
+
+                <div class="table-container">
+                    <table id="productsTable">
+                        <thead>
+                            <tr>
+                                <th>Produto</th>
+                                <th>Unidade</th>
+                                <th>Valor Unitário</th>
+                                <th>Empresa (Emitente)</th> <!-- Atualizado -->
+                                <th>Nota Fiscal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Resultados serão inseridos aqui -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="searchMessage" class="status-message" style="display:none;"></div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 NFC-e Scan App</p>
+        </footer>
+    </div>
+
+    <script src="productSearch.js"></script>
+</body>
+</html>

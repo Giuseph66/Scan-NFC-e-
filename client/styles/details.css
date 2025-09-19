@@ -1,0 +1,266 @@
+/* client/styles/details.css */
+
+:root {
+  /* Cores */
+  --primary-color: #4361ee;
+  --secondary-color: #3f37c9;
+  --success-color: #4cc9f0;
+  --warning-color: #f72585;
+  --danger-color: #e63946;
+  --background-color: #f8f9fa;
+  --text-color: #212529;
+  --border-color: #dee2e6;
+  --card-bg: #ffffff;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+  /* Espaçamentos */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  /* Bordas */
+  --border-radius: 8px;
+  --border-radius-lg: 12px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #e0eafc, #cfdef3);
+  color: var(--text-color);
+  line-height: 1.6;
+  min-height: 100vh;
+  padding: var(--spacing-md);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: var(--card-bg);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 90vh;
+}
+
+/* Header */
+header {
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  padding: var(--spacing-lg);
+  text-align: center;
+}
+
+header h1 {
+  margin-bottom: var(--spacing-sm);
+  font-size: 1.8rem;
+}
+
+header nav {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+header nav a {
+  color: white;
+  text-decoration: none;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius);
+  transition: background-color 0.3s ease;
+}
+
+header nav a:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Main Content */
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-lg);
+  gap: var(--spacing-lg);
+}
+
+/* Seções */
+section {
+  background-color: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.details-section h2 {
+  margin-bottom: var(--spacing-md);
+  color: var(--primary-color);
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 2px solid var(--border-color);
+}
+
+/* Detalhes Gerais */
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-item label {
+  font-weight: bold;
+  margin-bottom: var(--spacing-xs);
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.detail-item span {
+  padding: var(--spacing-sm);
+  background-color: #f1f3f5;
+  border-radius: var(--border-radius);
+  word-break: break-word;
+  border: 1px solid var(--border-color);
+  font-family: 'Courier New', Courier, monospace; /* Para dados técnicos */
+  font-size: 0.95rem;
+}
+
+/* Tabela de Itens */
+.table-container {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+#itensDetailTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+#itensDetailTable thead {
+  background-color: #e9ecef;
+}
+
+#itensDetailTable th,
+#itensDetailTable td {
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+#itensDetailTable th {
+  font-weight: 600;
+  color: #495057;
+  position: sticky;
+  top: 0;
+  background-color: #f8f9fa;
+}
+
+#itensDetailTable tbody tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+#itensDetailTable tbody tr:hover {
+  background-color: #e7f5ff;
+}
+
+/* Mensagens */
+#loadingMessage, #errorMessage {
+  text-align: center;
+  padding: var(--spacing-lg);
+  font-size: 1.1rem;
+}
+
+#errorMessage {
+  color: var(--danger-color);
+  font-weight: 500;
+}
+
+/* Footer */
+footer {
+  text-align: center;
+  padding: var(--spacing-md);
+  color: #6c757d;
+  border-top: 1px solid var(--border-color);
+  background-color: #f8f9fa;
+  font-size: 0.9rem;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  body {
+    padding: var(--spacing-sm);
+  }
+  
+  .container {
+    min-height: auto;
+  }
+
+  header {
+    padding: var(--spacing-md);
+  }
+
+  header h1 {
+    font-size: 1.5rem;
+  }
+
+  main {
+    padding: var(--spacing-md);
+  }
+
+  section {
+    padding: var(--spacing-md);
+  }
+
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-item label {
+    font-size: 0.85rem;
+  }
+
+  .detail-item span {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  header h1 {
+    font-size: 1.3rem;
+  }
+
+  header nav {
+    gap: var(--spacing-sm);
+  }
+
+  header nav a {
+    font-size: 0.9rem;
+    padding: var(--spacing-xs);
+  }
+
+  #itensDetailTable th,
+  #itensDetailTable td {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.8rem;
+  }
+}

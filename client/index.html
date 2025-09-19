@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NFC-e Scan - Leitor</title>
+<link rel="stylesheet" href="styles/index.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Leitor de QR Code NFC-e</h1>
+            <p>Aponte a câmera para o QR Code do cupom fiscal.</p>
+            <nav>
+                <a href="history.html">Ver Histórico de Notas</a> |
+                <a href="productSearch.html">Buscar por Produto</a>
+            </nav>
+        </header>
+
+        <main>
+            <section class="camera-section">
+                <div class="video-container">
+                    <video id="video" playsinline></video>
+                    <div class="scan-overlay">
+                        <div class="scan-frame"></div>
+                        <div class="scan-pulse"></div>
+                    </div>
+                </div>
+                <div class="camera-controls">
+                    <select id="cameraSelect">
+                        <option value="">Selecionando câmera...</option>
+                    </select>
+                    <button id="startBtn">Iniciar Leitura</button>
+                    <button id="stopBtn" disabled>Parar</button>
+                </div>
+                <div id="status" class="status-message">Aguardando permissão da câmera...</div>
+            </section>
+
+            <section class="result-section" id="resultSection" style="display:none;">
+                <h2>Dados da Nota Lida</h2>
+                <div class="result-grid">
+                    <div class="result-item">
+                        <label>Chave:</label>
+                        <span id="chaveResult">-</span>
+                    </div>
+                    <div class="result-item">
+                        <label>Emitente:</label>
+                        <span id="emitenteResult">-</span>
+                    </div>
+                    <div class="result-item">
+                        <label>Ambiente:</label>
+                        <span id="ambienteResult">-</span>
+                    </div>
+                    <div class="result-item full-width">
+                        <label>Itens:</label>
+                        <table id="itensTable">
+                            <thead>
+                                <tr>
+                                    <th>Descrição</th>
+                                    <th>Qtde</th>
+                                    <th>Un</th>
+                                    <th>Unitário</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Itens serão inseridos aqui -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button id="saveBtn">Salvar Nota</button>
+                    <button id="rescanBtn">Escanear Novamente</button>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 NFC-e Scan App</p>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="scanner.js"></script>
+</body>
+</html>

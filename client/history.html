@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NFC-e Scan - Histórico</title>
+<link rel="stylesheet" href="styles/history.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Histórico de NFC-e Lidas</h1>
+            <p>Lista de todas as notas fiscais armazenadas localmente.</p>
+            <nav>
+                <a href="index.html">&larr; Leitor</a> |
+                <a href="productSearch.html">Buscar por Produto</a>
+            </nav>
+        </header>
+
+        <main>
+            <section class="history-section">
+                <div class="filters">
+                    <input type="text" id="searchInput" placeholder="Buscar por chave, emitente...">
+                    <button id="searchBtn">Buscar</button>
+                </div>
+
+                <div class="table-container">
+                    <table id="historyTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Chave</th>
+                                <th>Emitente</th>
+                                <th>Data de Leitura</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Linhas serão preenchidas dinamicamente -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination">
+                    <button id="prevPageBtn" disabled>Página Anterior</button>
+                    <span id="pageInfo">Página 1 de 1</span>
+                    <button id="nextPageBtn" disabled>Próxima Página</button>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 NFC-e Scan App</p>
+        </footer>
+    </div>
+
+    <script src="history.js"></script>
+</body>
+</html>
