@@ -164,6 +164,13 @@ POST   /api/notas/salvar     # Salvar nova nota
 GET /api/notas/itens/buscar?q=termo
 ```
 
+### **Listar Todos os Itens**
+```http
+GET /api/notas/itens                    # Todos os itens
+GET /api/notas/itens?limit=50          # Com paginação
+GET /api/notas/itens?page=2&limit=20   # Página específica
+```
+
 ## 🗄️ Estrutura do Banco de Dados
 
 ### **Tabela: notas_fiscais**
