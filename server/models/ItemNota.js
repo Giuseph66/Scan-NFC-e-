@@ -38,6 +38,15 @@ const ItemNota = sequelize.define('ItemNota', {
   valorTotal: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
+  },
+  // Foreign key para NotaFiscal
+  notaFiscalId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'notas_fiscais',
+      key: 'id'
+    }
   }
   // Pode-se adicionar campos como NCM, CFOP, etc., se necessário
 }, {

@@ -50,6 +50,61 @@ const NotaFiscal = sequelize.define('NotaFiscal', {
     type: DataTypes.STRING(20),
     allowNull: true
   },
+  // Nome fantasia da empresa
+  nomeFantasia: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  // Situação cadastral da empresa
+  situacaoCadastral: {
+    type: DataTypes.STRING(50),
+    allowNull: true
+  },
+  // Data de abertura da empresa
+  dataAbertura: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  // Capital social da empresa
+  capitalSocial: {
+    type: DataTypes.DECIMAL(15, 2),
+    allowNull: true
+  },
+  // Natureza jurídica
+  naturezaJuridica: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  // Endereço completo
+  endereco: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  // CEP
+  cep: {
+    type: DataTypes.STRING(10),
+    allowNull: true
+  },
+  // Município
+  municipio: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  // UF
+  uf: {
+    type: DataTypes.STRING(2),
+    allowNull: true
+  },
+  // Telefone
+  telefone: {
+    type: DataTypes.STRING(20),
+    allowNull: true
+  },
+  // Email
+  email: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
   // Data de emissão (extraída da chave ou de outro campo)
   // dataEmissao: {
   //   type: DataTypes.DATE,

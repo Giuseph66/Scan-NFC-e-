@@ -1,0 +1,19 @@
+# Configurações do sistema de migração
+# Copie este arquivo para .env e ajuste as configurações
+
+# API do sistema novo
+API_BASE_URL=http://localhost:1425
+
+# Banco de dados antigo (SQLite)
+OLD_DB_TYPE=sqlite
+OLD_DB_FILE=../database_old.sqlite
+
+# Configurações de migração
+BATCH_SIZE=10
+MAX_RETRIES=3
+RETRY_DELAY=2
+DRY_RUN=false
+
+# Configurações de log
+LOG_LEVEL=INFO
+LOG_FILE=migration.log

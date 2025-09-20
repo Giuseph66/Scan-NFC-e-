@@ -13,8 +13,20 @@ const detailVSig = document.getElementById('detailVSig');
 const detailCreatedAt = document.getElementById('detailCreatedAt');
 const detailCnpjEmitente = document.getElementById('detailCnpjEmitente');
 const detailNomeEmitente = document.getElementById('detailNomeEmitente');
+const detailNomeFantasia = document.getElementById('detailNomeFantasia');
 const detailIeEmitente = document.getElementById('detailIeEmitente');
+const detailSituacaoCadastral = document.getElementById('detailSituacaoCadastral');
+const detailDataAbertura = document.getElementById('detailDataAbertura');
+const detailCapitalSocial = document.getElementById('detailCapitalSocial');
+const detailNaturezaJuridica = document.getElementById('detailNaturezaJuridica');
+const detailEndereco = document.getElementById('detailEndereco');
+const detailCep = document.getElementById('detailCep');
+const detailMunicipio = document.getElementById('detailMunicipio');
+const detailUf = document.getElementById('detailUf');
+const detailTelefone = document.getElementById('detailTelefone');
+const detailEmail = document.getElementById('detailEmail');
 const itensDetailTableBody = document.querySelector('#itensDetailTable tbody');
+const totalNota = document.getElementById('totalNota');
 
 // --- Funções de Utilidade ---
 function formatDate(dateString) {
@@ -29,6 +41,79 @@ function formatCurrency(value) {
     const num = parseFloat(valorLimpo);
     if (isNaN(num)) return '-';
     return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function formatCNPJ(cnpj) {
+    if (!cnpj) return '-';
+    // Remove formatação existente
+    const cnpjLimpo = cnpj.replace(/\D/g, '');
+    if (cnpjLimpo.length !== 14) return cnpj;
+    // Aplica máscara XX.XXX.XXX/XXXX-XX
+    return cnpjLimpo.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+}
+
+function formatCEP(cep) {
+    if (!cep) return '-';
+    // Remove formatação existente
+    const cepLimpo = cep.replace(/\D/g, '');
+    if (cepLimpo.length !== 8) return cep;
+    // Aplica máscara XXXXX-XXX
+    return cepLimpo.replace(/^(\d{5})(\d{3})$/, '$1-$2');
+}
+
+function formatPhone(phone) {
+    if (!phone) return '-';
+    // Remove formatação existente
+    const phoneLimpo = phone.replace(/\D/g, '');
+    if (phoneLimpo.length === 11) {
+        // Aplica máscara (XX) XXXXX-XXXX
+        return phoneLimpo.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+    } else if (phoneLimpo.length === 10) {
+        // Aplica máscara (XX) XXXX-XXXX
+        return phoneLimpo.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
+    }
+    return phone;
+}
+
+function formatDateOnly(dateString) {
+    if (!dateString) return '-';
+    const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+    return new Date(dateString).toLocaleDateString('pt-BR', options);
+}
+
+function getSituacaoBadge(situacao) {
+    if (!situacao) return '-';
+    
+    const situacaoLower = situacao.toLowerCase();
+    let badgeClass = 'badge-neutral';
+    
+    if (situacaoLower.includes('ativa')) {
+        badgeClass = 'badge-success';
+    } else if (situacaoLower.includes('suspensa') || situacaoLower.includes('inativa')) {
+        badgeClass = 'badge-danger';
+    } else if (situacaoLower.includes('baixada')) {
+        badgeClass = 'badge-warning';
+    }
+    
+    return `<span class="badge ${badgeClass}">${situacao}</span>`;
+}
+
+function calculateTotal(itens) {
+    if (!itens || !Array.isArray(itens)) return 0;
+    
+    let total = 0;
+    itens.forEach(item => {
+        if (item.valorTotal) {
+            // Converte formato brasileiro para decimal
+            const valorLimpo = String(item.valorTotal).replace(/\s/g, '').replace(',', '.');
+            const num = parseFloat(valorLimpo);
+            if (!isNaN(num)) {
+                total += num;
+            }
+        }
+    });
+    
+    return total;
 }
 
 function getNotaIdFromUrl() {
@@ -74,9 +159,27 @@ function displayNotaDetails(nota) {
     detailVSig.textContent = nota.vSig || '-';
     detailCreatedAt.textContent = nota.createdAt ? formatDate(nota.createdAt) : '-';
 
-    detailCnpjEmitente.textContent = nota.cnpjEmitente || '-';
+    // Dados básicos do emitente
+    detailCnpjEmitente.textContent = formatCNPJ(nota.cnpjEmitente);
     detailNomeEmitente.textContent = nota.nomeEmitente || '-';
+    detailNomeFantasia.textContent = nota.nomeFantasia || '-';
     detailIeEmitente.textContent = nota.ieEmitente || '-';
+    
+    // Dados enriquecidos do CNPJ
+    detailSituacaoCadastral.innerHTML = getSituacaoBadge(nota.situacaoCadastral);
+    detailDataAbertura.textContent = formatDateOnly(nota.dataAbertura);
+    detailCapitalSocial.textContent = formatCurrency(nota.capitalSocial);
+    detailNaturezaJuridica.textContent = nota.naturezaJuridica || '-';
+    
+    // Dados de endereço
+    detailEndereco.textContent = nota.endereco || '-';
+    detailCep.textContent = formatCEP(nota.cep);
+    detailMunicipio.textContent = nota.municipio || '-';
+    detailUf.textContent = nota.uf || '-';
+    
+    // Dados de contato
+    detailTelefone.textContent = formatPhone(nota.telefone);
+    detailEmail.textContent = nota.email || '-';
 
     // Limpa e popula a tabela de itens
     itensDetailTableBody.innerHTML = '';
@@ -93,10 +196,17 @@ function displayNotaDetails(nota) {
             `;
             itensDetailTableBody.appendChild(row);
         });
+        
+        // Calcula e exibe o total da nota
+        const total = calculateTotal(nota.itens);
+        totalNota.textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     } else {
         const row = document.createElement('tr');
         row.innerHTML = `<td colspan="6">Nenhum item encontrado para esta nota.</td>`;
         itensDetailTableBody.appendChild(row);
+        
+        // Define total como zero quando não há itens
+        totalNota.textContent = 'R$ 0,00';
     }
 
     notaDetails.style.display = 'block';

@@ -1,0 +1,8 @@
+# Dependências para o sistema de migração
+requests==2.31.0
+sqlite3
+pymysql==1.1.0
+psycopg2-binary==2.9.7
+python-dotenv==1.0.0
+tqdm==4.66.1
+colorama==0.4.6
