@@ -3,6 +3,7 @@
 // --- Referências aos elementos do DOM ---
 const searchInput = document.getElementById('searchInput');
 const searchBtn = document.getElementById('searchBtn');
+const refreshBtn = document.getElementById('refreshBtn');
 const historyTableBody = document.querySelector('#historyTable tbody');
 const prevPageBtn = document.getElementById('prevPageBtn');
 const nextPageBtn = document.getElementById('nextPageBtn');
@@ -45,6 +46,7 @@ async function fetchNotas(page = 1, searchTerm = '') {
     } catch (error) {
         console.error("Erro ao carregar histórico:", error);
         historyTableBody.innerHTML = `<tr><td colspan="5">Erro ao carregar dados: ${error.message}</td></tr>`;
+        showError('Erro ao Carregar', `Não foi possível carregar o histórico: ${error.message}`);
     }
 }
 
@@ -113,6 +115,30 @@ nextPageBtn.addEventListener('click', () => {
     if (currentPage < totalPages) {
         currentPage++;
         fetchNotas(currentPage, currentSearchTerm);
+    }
+});
+
+// Botão de refresh para verificar novas notas
+refreshBtn.addEventListener('click', async () => {
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = '🔄 Verificando...';
+    
+    try {
+        // Força verificação de novas notas
+        if (typeof checkNewNotas === 'function') {
+            await checkNewNotas();
+        }
+        
+        // Recarrega a lista atual
+        await fetchNotas(currentPage, currentSearchTerm);
+        
+        showSuccess('Lista Atualizada', 'Histórico atualizado com sucesso!');
+    } catch (error) {
+        console.error('Erro ao atualizar:', error);
+        showError('Erro ao Atualizar', 'Não foi possível atualizar a lista.');
+    } finally {
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = '🔄 Atualizar';
     }
 });
 

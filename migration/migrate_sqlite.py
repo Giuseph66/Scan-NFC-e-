@@ -20,7 +20,8 @@ class SQLiteMigrator:
     def __init__(self):
         # Caminhos
         self.old_db_path = Path(__file__).parent.parent / "database_old.sqlite"
-        self.api_url = "https://teste.neurelix.com.br/api/scan/process"
+        #self.api_url = "https://teste.neurelix.com.br/api/scan/process"
+        self.api_url = "http://localhost:1425/api/scan/process"
         
         # Estatísticas
         self.stats = {
@@ -51,7 +52,8 @@ class SQLiteMigrator:
         
         # Testa conexão com API
         try:
-            response = requests.get("https://teste.neurelix.com.br/api/status", timeout=5)
+            #response = requests.get("https://teste.neurelix.com.br/api/status", timeout=5)
+            response = requests.get("http://localhost:1425/api/status", timeout=5)
             if response.status_code == 200:
                 print(f"{Fore.GREEN}✅ API do sistema novo está funcionando")
             else:

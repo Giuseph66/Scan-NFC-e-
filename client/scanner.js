@@ -61,6 +61,7 @@ async function listCameras() {
     } catch (err) {
         console.error("Erro ao listar câmeras:", err);
         setStatus('Erro ao acessar lista de câmeras.', 'error');
+        showError('Erro de Câmera', 'Não foi possível acessar a lista de câmeras disponíveis.');
     }
 }
 
@@ -117,6 +118,7 @@ async function startStream() {
     } catch (err) {
         console.error("Erro ao acessar a câmera:", err);
         setStatus('Erro ao acessar a câmera. Verifique permissões.', 'error');
+        showError('Erro de Permissão', 'Não foi possível acessar a câmera. Verifique se as permissões foram concedidas.');
         alert('Não foi possível acessar a câmera.\nVerifique as permissões do navegador.');
     }
 }
@@ -218,11 +220,13 @@ async function onQRCodeRead(rawText) {
             }
         } else {
             setStatus(result.message || 'Erro ao processar QR Code', 'error');
+            showError('Erro de Processamento', result.message || 'Não foi possível processar o QR Code da NFC-e.');
             resultSection.style.display = 'none';
         }
     } catch (e) {
         console.error("Erro ao processar QR Code:", e);
         setStatus(`Erro ao processar QR Code: ${e.message}`, 'error');
+        showError('Erro de Processamento', `Erro ao processar QR Code: ${e.message}`);
         resultSection.style.display = 'none';
     }
 }
@@ -256,6 +260,7 @@ function displayResult(data) {
 
     resultSection.style.display = 'block';
     setStatus('QR Code lido com sucesso!', 'success');
+    showSuccess('QR Code Lido', 'QR Code da NFC-e foi lido com sucesso!');
 }
 
 // --- Funções de Integração com Backend ---
@@ -346,12 +351,36 @@ async function saveNfce() {
         if (response.ok) {
             console.log(`NFC-e salva com sucesso! ID: ${data.id}`);
             setStatus(`NFC-e salva automaticamente! ID: ${data.id}`, 'success');
-            // Opcional: alert(`NFC-e salva com sucesso! ID: ${data.id}`);
+            
+            // Notificação de sucesso com detalhes
+            let message = `NFC-e salva com sucesso! ID: ${data.id}`;
+            if (data.dadosCNPJEncontrados) {
+                message += `\nDados da empresa: ${data.nomeFantasia || 'N/A'}`;
+                if (data.dadosDoCache) {
+                    message += '\n(Dados obtidos do cache)';
+                }
+            }
+            
+            showSuccess('NFC-e Salva', message, {
+                duration: 8000,
+                actions: [
+                    {
+                        text: 'Ver Detalhes',
+                        primary: true,
+                        onclick: `window.location.href='details.html?id=${data.id}'`
+                    }
+                ]
+            });
+            
+            // Atualiza contador de notas no localStorage
+            if (typeof updateNotasCount === 'function') {
+                updateNotasCount();
+            }
         } else {
             if (response.status === 409) {
                 console.log('Esta NFC-e já foi salva anteriormente.');
                 setStatus('NFC-e já existia no banco.', 'info');
-                // Opcional: alert('Esta NFC-e já foi salva anteriormente.');
+                showInfo('NFC-e Duplicada', 'Esta NFC-e já foi salva anteriormente no sistema.');
             } else {
                 throw new Error(data.message || 'Erro desconhecido ao salvar.');
             }
@@ -359,6 +388,7 @@ async function saveNfce() {
     } catch (error) {
         console.error("Erro ao salvar NFC-e:", error);
         setStatus(`Erro ao salvar automaticamente: ${error.message}`, 'error');
+        showError('Erro ao Salvar', `Não foi possível salvar a NFC-e: ${error.message}`);
         // Opcional: alert(`Falha ao salvar NFC-e: ${error.message}`);
     }
 }

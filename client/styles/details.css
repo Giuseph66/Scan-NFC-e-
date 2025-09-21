@@ -430,3 +430,47 @@ section h2::before {
     font-size: 1.5rem;
   }
 }
+
+/* Botão da SEFAZ */
+.sefaz-button {
+  background: var(--primary-color);
+  color: white;
+  border: 1px solid var(--primary-color);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--border-radius);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  text-decoration: none;
+}
+
+.sefaz-button:hover {
+  background: var(--secondary-color);
+  border-color: var(--secondary-color);
+  color: white;
+  text-decoration: none;
+}
+
+.sefaz-button:active {
+  background: var(--secondary-color);
+  transform: none;
+}
+
+.sefaz-button:disabled {
+  background: #6c757d;
+  border-color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Responsividade para o botão */
+@media (max-width: 768px) {
+  .sefaz-button {
+    width: auto;
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+}

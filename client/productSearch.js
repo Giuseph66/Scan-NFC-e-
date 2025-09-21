@@ -51,10 +51,12 @@ async function searchProducts(term) {
 
         renderTable(data.itens);
         showMessage(`Encontrados ${data.total} itens.`, 'success');
+        showSuccess('Busca Concluída', `Encontrados ${data.total} produtos com o termo "${termo}"`);
     } catch (error) {
         console.error("Erro na busca:", error);
         showMessage(`Erro: ${error.message}`, 'error');
         productsTableBody.innerHTML = `<tr><td colspan="7">Erro ao buscar produtos: ${error.message}</td></tr>`;
+        showError('Erro na Busca', `Não foi possível buscar produtos: ${error.message}`);
     }
 }
 

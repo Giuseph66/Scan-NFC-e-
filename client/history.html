@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NFC-e Scan - Histórico</title>
 <link rel="stylesheet" href="styles/history.css">
+<link rel="stylesheet" href="styles/notifications.css">
 </head>
 <body>
     <div class="container">
@@ -22,6 +23,7 @@
                 <div class="filters">
                     <input type="text" id="searchInput" placeholder="Buscar por chave, emitente...">
                     <button id="searchBtn">Buscar</button>
+                    <button id="refreshBtn" title="Verificar novas notas">🔄 Atualizar</button>
                 </div>
 
                 <div class="table-container">
@@ -54,6 +56,8 @@
         </footer>
     </div>
 
+    <script src="js/notifications.js"></script>
+    <script src="js/notasTracker.js"></script>
     <script src="history.js"></script>
 </body>
 </html>

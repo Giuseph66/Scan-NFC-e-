@@ -27,6 +27,7 @@ const detailTelefone = document.getElementById('detailTelefone');
 const detailEmail = document.getElementById('detailEmail');
 const itensDetailTableBody = document.querySelector('#itensDetailTable tbody');
 const totalNota = document.getElementById('totalNota');
+const viewSefazBtn = document.getElementById('viewSefazBtn');
 
 // --- Funções de Utilidade ---
 function formatDate(dateString) {
@@ -50,6 +51,33 @@ function formatCNPJ(cnpj) {
     if (cnpjLimpo.length !== 14) return cnpj;
     // Aplica máscara XX.XXX.XXX/XXXX-XX
     return cnpjLimpo.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+}
+
+// --- Função para construir URL da SEFAZ ---
+function buildSefazUrl(nota) {
+    if (!nota) return null;
+    
+    const chave = nota.chave ? nota.chave.trim() : '';
+    const versao = nota.versao ? nota.versao.trim() : '';
+    const ambiente = nota.ambiente ? nota.ambiente.trim() : '';
+    const cIdToken = nota.cIdToken ? nota.cIdToken.trim() : '';
+    const vSig = nota.vSig ? nota.vSig.trim() : '';
+    
+    // Verifica se todos os campos necessários estão presentes
+    if (!chave || !versao || !ambiente || !cIdToken || !vSig) {
+        console.warn('Campos necessários para URL da SEFAZ não encontrados:', {
+            chave: chave || 'VAZIO',
+            versao: versao || 'VAZIO',
+            ambiente: ambiente || 'VAZIO',
+            cIdToken: cIdToken || 'VAZIO',
+            vSig: vSig || 'VAZIO'
+        });
+        return null;
+    }
+    
+    // Constrói a URL seguindo a regra especificada
+    const url = `https://www.sefaz.mt.gov.br/nfce/consultanfce?p=${chave}|${versao}|${ambiente}|${cIdToken}|${vSig}`;
+    return url;
 }
 
 function formatCEP(cep) {
@@ -145,6 +173,7 @@ async function fetchNotaDetails(id) {
         loadingMessage.style.display = 'none';
         errorMessage.textContent = error.message;
         errorMessage.style.display = 'block';
+        showError('Erro ao Carregar', `Não foi possível carregar os detalhes: ${error.message}`);
     }
 }
 
@@ -207,6 +236,19 @@ function displayNotaDetails(nota) {
         
         // Define total como zero quando não há itens
         totalNota.textContent = 'R$ 0,00';
+    }
+
+    // Configura o botão da SEFAZ
+    const sefazUrl = buildSefazUrl(nota);
+    if (sefazUrl) {
+        viewSefazBtn.style.display = 'inline-block';
+        viewSefazBtn.disabled = false;
+        viewSefazBtn.onclick = () => {
+            window.open(sefazUrl, '_blank');
+        };
+    } else {
+        viewSefazBtn.style.display = 'none';
+        viewSefazBtn.disabled = true;
     }
 
     notaDetails.style.display = 'block';

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NFC-e Scan - Detalhes</title>
 <link rel="stylesheet" href="styles/details.css">
+<link rel="stylesheet" href="styles/notifications.css">
 </head>
 <body>
     <div class="container">
@@ -51,6 +52,11 @@
                         <div class="detail-item">
                             <label>Data de Leitura:</label>
                             <span id="detailCreatedAt">-</span>
+                        </div>
+                        <div class="detail-item full-width">
+                            <button id="viewSefazBtn" class="sefaz-button" style="display: none;">
+                                🌐 Ver Nota na SEFAZ
+                            </button>
                         </div>
                     </div>
 
@@ -156,6 +162,8 @@
         </footer>
     </div>
 
+    <script src="js/notifications.js"></script>
+    <script src="js/notasTracker.js"></script>
     <script src="details.js"></script>
 </body>
 </html>
