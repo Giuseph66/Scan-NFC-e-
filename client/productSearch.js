@@ -51,7 +51,6 @@ async function searchProducts(term) {
 
         renderTable(data.itens);
         showMessage(`Encontrados ${data.total} itens.`, 'success');
-        showSuccess('Busca Concluída', `Encontrados ${data.total} produtos com o termo "${termo}"`);
     } catch (error) {
         console.error("Erro na busca:", error);
         showMessage(`Erro: ${error.message}`, 'error');
@@ -71,7 +70,7 @@ function renderTable(itens) {
             <td>${formatCurrency(item.valorUnitario)}</td>
             <td>${item.emitente?.nome || '-'}</td> <!-- Nome da empresa -->
             <td>
-                <a href="details.html?id=${item.notaFiscalId}" target="_blank">Ver Nota</a>
+                <a href="details.html?id=${item.notaFiscalId}">Ver Nota</a>
             </td>
         `;
         productsTableBody.appendChild(row);

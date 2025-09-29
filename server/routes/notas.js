@@ -232,6 +232,156 @@ router.get('/detalhes/:id', async (req, res) => {
   }
 });
 
+// Rota para rebuscar itens de uma NFC-e específica
+router.post('/rebuscar-itens/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Busca a nota fiscal
+    const nota = await NotaFiscal.findByPk(id);
+    if (!nota) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'NFC-e não encontrada.' 
+      });
+    }
+
+    // Constrói a URL da SEFAZ
+    const sefazUrl = `https://www.sefaz.mt.gov.br/nfce/consultanfce?p=${nota.chave}|${nota.versao}|${nota.ambiente}|${nota.cIdToken}|${nota.vSig}`;
+    
+    console.log(`🔄 Rebuscando itens para nota ${id}: ${sefazUrl}`);
+    
+    // Busca os dados da SEFAZ
+    const proxiedUrl = `https://r.jina.ai/${sefazUrl}`;
+    const response = await fetch(proxiedUrl, { method: 'GET' });
+    
+    if (!response.ok) {
+      throw new Error(`Falha ao obter página da SEFAZ (${response.status})`);
+    }
+    
+    const text = await response.text();
+    
+    // Importa as funções de parsing do scan.js
+    const { parseNfceText } = require('./scan');
+    const detalhes = parseNfceText(text);
+    
+    if (!detalhes.itens || detalhes.itens.length === 0) {
+      return res.json({
+        success: false,
+        message: 'Nenhum item encontrado na rebusca da SEFAZ.'
+      });
+    }
+    
+    console.log(`📦 Encontrados ${detalhes.itens.length} itens na rebusca`);
+    
+    // Inicia transação para sincronizar itens
+    const transaction = await sequelize.transaction();
+    
+    try {
+      // Busca itens existentes para esta nota
+      const itensExistentes = await ItemNota.findAll({
+        where: { notaFiscalId: id },
+        transaction
+      });
+      
+      console.log(`📋 Itens existentes no banco: ${itensExistentes.length}`);
+      
+      let itensNovos = 0;
+      let itensAtualizados = 0;
+      let itensCorrigidos = 0;
+      
+      // Processa cada item encontrado na rebusca
+      for (const itemNovo of detalhes.itens) {
+        // Busca item existente que corresponda (por descrição, quantidade e valor)
+        const itemExistente = itensExistentes.find(existente => 
+          existente.descricao === itemNovo.descricao &&
+          Math.abs(converterParaDecimal(existente.quantidade) - converterParaDecimal(itemNovo.qtde)) < 0.01 &&
+          Math.abs(converterParaDecimal(existente.valorTotal) - converterParaDecimal(itemNovo.total)) < 0.01
+        );
+        
+        if (itemExistente) {
+          // Item já existe - verifica se precisa corrigir notaFiscalId
+          if (!itemExistente.notaFiscalId || itemExistente.notaFiscalId !== parseInt(id)) {
+            await itemExistente.update({
+              notaFiscalId: parseInt(id)
+            }, { transaction });
+            itensCorrigidos++;
+            console.log(`🔧 Corrigido notaFiscalId para item: ${itemExistente.descricao}`);
+          }
+        } else {
+          // Item não existe - cria novo
+          await ItemNota.create({
+            notaFiscalId: parseInt(id),
+            codigo: itemNovo.codigo,
+            descricao: itemNovo.descricao,
+            quantidade: converterParaDecimal(itemNovo.qtde),
+            unidade: itemNovo.un,
+            valorUnitario: converterParaDecimal(itemNovo.unitario),
+            valorTotal: converterParaDecimal(itemNovo.total)
+          }, { transaction });
+          itensNovos++;
+          console.log(`➕ Novo item criado: ${itemNovo.descricao}`);
+        }
+      }
+      
+      // Busca itens órfãos (com notaFiscalId nulo) que possam pertencer a esta nota
+      const itensOrfaos = await ItemNota.findAll({
+        where: {
+          notaFiscalId: null,
+          descricao: {
+            [Op.in]: detalhes.itens.map(item => item.descricao)
+          }
+        },
+        transaction
+      });
+      
+      // Tenta associar itens órfãos a esta nota
+      for (const itemOrfao of itensOrfaos) {
+        const itemCorrespondente = detalhes.itens.find(item => 
+          item.descricao === itemOrfao.descricao &&
+          Math.abs(converterParaDecimal(itemOrfao.quantidade) - converterParaDecimal(item.qtde)) < 0.01 &&
+          Math.abs(converterParaDecimal(itemOrfao.valorTotal) - converterParaDecimal(item.total)) < 0.01
+        );
+        
+        if (itemCorrespondente) {
+          await itemOrfao.update({
+            notaFiscalId: parseInt(id)
+          }, { transaction });
+          itensCorrigidos++;
+          console.log(`🔗 Item órfão associado à nota: ${itemOrfao.descricao}`);
+        }
+      }
+      
+      await transaction.commit();
+      
+      const mensagem = `Rebusca concluída: ${itensNovos} novos itens, ${itensCorrigidos} itens corrigidos`;
+      console.log(`✅ ${mensagem}`);
+      
+      res.json({
+        success: true,
+        message: mensagem,
+        estatisticas: {
+          itensNovos,
+          itensCorrigidos,
+          itensTotal: detalhes.itens.length
+        }
+      });
+      
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
+    
+  } catch (error) {
+    console.error('Erro na rebusca de itens:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Erro interno na rebusca de itens.', 
+      error: error.message 
+    });
+  }
+});
+
 // Rota para obter detalhes de uma NFC-e específica por ID numérico (mantém compatibilidade)
 router.get('/:id', async (req, res) => {
   try {

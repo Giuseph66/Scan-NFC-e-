@@ -28,6 +28,9 @@ const detailEmail = document.getElementById('detailEmail');
 const itensDetailTableBody = document.querySelector('#itensDetailTable tbody');
 const totalNota = document.getElementById('totalNota');
 const viewSefazBtn = document.getElementById('viewSefazBtn');
+const rebuscaSection = document.getElementById('rebuscaSection');
+const rebuscaBtn = document.getElementById('rebuscaBtn');
+const rebuscaStatus = document.getElementById('rebuscaStatus');
 
 // --- Funções de Utilidade ---
 function formatDate(dateString) {
@@ -149,6 +152,57 @@ function getNotaIdFromUrl() {
     return urlParams.get('id');
 }
 
+// --- Funções de Rebusca ---
+async function rebuscarItens(notaId) {
+    try {
+        showRebuscaStatus('Buscando itens da nota na SEFAZ...', 'loading');
+        rebuscaBtn.disabled = true;
+
+        const response = await fetch(`/api/notas/rebuscar-itens/${notaId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `Erro ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        
+        if (result.success) {
+            showRebuscaStatus(`✅ ${result.message}`, 'success');
+            showSuccess('Rebusca Concluída', result.message);
+            
+            // Recarrega os detalhes da nota para mostrar os novos itens
+            setTimeout(() => {
+                fetchNotaDetails(notaId);
+            }, 1500);
+        } else {
+            throw new Error(result.message || 'Erro desconhecido na rebusca');
+        }
+
+    } catch (error) {
+        console.error('Erro na rebusca:', error);
+        showRebuscaStatus(`❌ Erro: ${error.message}`, 'error');
+        showError('Erro na Rebusca', `Não foi possível rebuscar os itens: ${error.message}`);
+    } finally {
+        rebuscaBtn.disabled = false;
+    }
+}
+
+function showRebuscaStatus(message, type) {
+    rebuscaStatus.textContent = message;
+    rebuscaStatus.className = `rebusca-status ${type}`;
+    rebuscaStatus.style.display = 'block';
+}
+
+function hideRebuscaStatus() {
+    rebuscaStatus.style.display = 'none';
+}
+
 // --- Funções de API ---
 async function fetchNotaDetails(id) {
     try {
@@ -229,6 +283,9 @@ function displayNotaDetails(nota) {
         // Calcula e exibe o total da nota
         const total = calculateTotal(nota.itens);
         totalNota.textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        
+        // Esconde a seção de rebusca quando há itens
+        rebuscaSection.style.display = 'none';
     } else {
         const row = document.createElement('tr');
         row.innerHTML = `<td colspan="6">Nenhum item encontrado para esta nota.</td>`;
@@ -236,6 +293,10 @@ function displayNotaDetails(nota) {
         
         // Define total como zero quando não há itens
         totalNota.textContent = 'R$ 0,00';
+        
+        // Mostra a seção de rebusca quando não há itens
+        rebuscaSection.style.display = 'block';
+        hideRebuscaStatus();
     }
 
     // Configura o botão da SEFAZ
@@ -259,6 +320,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const notaId = getNotaIdFromUrl();
     if (notaId) {
         fetchNotaDetails(notaId);
+        
+        // Event listener para o botão de rebusca
+        rebuscaBtn.addEventListener('click', () => {
+            rebuscarItens(notaId);
+        });
     } else {
         loadingMessage.style.display = 'none';
         errorMessage.textContent = 'ID da NFC-e não fornecido na URL.';

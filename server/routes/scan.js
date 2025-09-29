@@ -611,3 +611,8 @@ router.get('/cnpj/stats', async (req, res) => {
 });
 
 module.exports = router;
+
+// Exporta funções para uso em outros módulos
+module.exports.parseNfceText = parseNfceText;
+module.exports.parseQrNfce = parseQrNfce;
+module.exports.formatarCNPJ = formatarCNPJ;
