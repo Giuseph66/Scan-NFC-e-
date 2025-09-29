@@ -14,6 +14,10 @@ let currentPage = 1;
 const itemsPerPage = 10; // Deve ser consistente com o backend
 let totalPages = 1;
 let currentSearchTerm = '';
+let allNotas = []; // Armazena todas as notas para filtro local
+let filteredNotas = []; // Notas filtradas
+let searchTimeoutId;
+const SEARCH_DELAY = 500; // 500ms de delay
 
 // --- Funções de Utilidade ---
 function formatDate(dateString) {
@@ -27,34 +31,64 @@ function truncateString(str, maxLen = 30) {
 }
 
 // --- Funções de API ---
-async function fetchNotas(page = 1, searchTerm = '') {
+async function fetchAllNotas() {
     try {
-        let url = `/api/notas?page=${page}&limit=${itemsPerPage}`;
-        if (searchTerm) {
-            // O backend ainda não suporta busca, mas podemos preparar a URL
-            // url += `&search=${encodeURIComponent(searchTerm)}`;
-            // Por enquanto, vamos ignorar o searchTerm no frontend também
-            // e focar na paginação.
-        }
-
-        const response = await fetch(url);
+        // Busca todas as notas sem paginação para filtro local
+        const response = await fetch('/api/notas?limit=1000'); // Limite alto para pegar todas
         if (!response.ok) throw new Error(`Erro ao buscar notas: ${response.status}`);
 
         const data = await response.json();
-        renderTable(data.notas);
-        updatePagination(data);
+        allNotas = data.notas || [];
+        return allNotas;
     } catch (error) {
         console.error("Erro ao carregar histórico:", error);
-        historyTableBody.innerHTML = `<tr><td colspan="5">Erro ao carregar dados: ${error.message}</td></tr>`;
         showError('Erro ao Carregar', `Não foi possível carregar o histórico: ${error.message}`);
+        return [];
     }
+}
+
+function filterNotas(searchTerm) {
+    if (!searchTerm.trim()) {
+        filteredNotas = [...allNotas];
+    } else {
+        const term = searchTerm.toLowerCase();
+        filteredNotas = allNotas.filter(nota => 
+            (nota.nomeEmitente && nota.nomeEmitente.toLowerCase().includes(term)) ||
+            (nota.chave && nota.chave.toLowerCase().includes(term))
+        );
+    }
+    
+    // Atualiza paginação baseada nos resultados filtrados
+    totalPages = Math.ceil(filteredNotas.length / itemsPerPage);
+    currentPage = 1; // Reset para primeira página ao filtrar
+    
+    renderFilteredTable();
+    updatePagination();
+}
+
+function renderFilteredTable() {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const notasToShow = filteredNotas.slice(startIndex, endIndex);
+    
+    renderTable(notasToShow);
+}
+
+function updatePagination() {
+    pageInfo.textContent = `Página ${currentPage} de ${totalPages} (${filteredNotas.length} notas)`;
+
+    prevPageBtn.disabled = currentPage === 1;
+    nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
 }
 
 function renderTable(notas) {
     historyTableBody.innerHTML = ''; // Limpa a tabela
 
     if (notas.length === 0) {
-        historyTableBody.innerHTML = `<tr><td colspan="5">Nenhuma NFC-e encontrada.</td></tr>`;
+        const message = currentSearchTerm ? 
+            `Nenhuma NFC-e encontrada para "${currentSearchTerm}".` : 
+            'Nenhuma NFC-e encontrada.';
+        historyTableBody.innerHTML = `<tr><td colspan="5">${message}</td></tr>`;
         return;
     }
 
@@ -81,22 +115,22 @@ function renderTable(notas) {
     });
 }
 
-function updatePagination(data) {
-    currentPage = data.page;
-    totalPages = data.pages;
-
-    pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
-
-    prevPageBtn.disabled = currentPage === 1;
-    nextPageBtn.disabled = currentPage === totalPages;
+// Função de debounce para busca
+function debounceSearch() {
+    clearTimeout(searchTimeoutId);
+    searchTimeoutId = setTimeout(() => {
+        currentSearchTerm = searchInput.value.trim();
+        filterNotas(currentSearchTerm);
+    }, SEARCH_DELAY);
 }
 
 // --- Event Listeners ---
 searchBtn.addEventListener('click', () => {
     currentSearchTerm = searchInput.value.trim();
-    currentPage = 1; // Reseta para a primeira página ao fazer uma nova busca
-    fetchNotas(currentPage, currentSearchTerm);
+    filterNotas(currentSearchTerm);
 });
+
+searchInput.addEventListener('input', debounceSearch);
 
 searchInput.addEventListener('keyup', (e) => {
     if (e.key === 'Enter') {
@@ -107,14 +141,16 @@ searchInput.addEventListener('keyup', (e) => {
 prevPageBtn.addEventListener('click', () => {
     if (currentPage > 1) {
         currentPage--;
-        fetchNotas(currentPage, currentSearchTerm);
+        renderFilteredTable();
+        updatePagination();
     }
 });
 
 nextPageBtn.addEventListener('click', () => {
     if (currentPage < totalPages) {
         currentPage++;
-        fetchNotas(currentPage, currentSearchTerm);
+        renderFilteredTable();
+        updatePagination();
     }
 });
 
@@ -129,8 +165,9 @@ refreshBtn.addEventListener('click', async () => {
             await checkNewNotas();
         }
         
-        // Recarrega a lista atual
-        await fetchNotas(currentPage, currentSearchTerm);
+        // Recarrega todas as notas
+        await fetchAllNotas();
+        filterNotas(currentSearchTerm);
         
         showSuccess('Lista Atualizada', 'Histórico atualizado com sucesso!');
     } catch (error) {
@@ -143,6 +180,7 @@ refreshBtn.addEventListener('click', async () => {
 });
 
 // --- Inicialização ---
-document.addEventListener('DOMContentLoaded', () => {
-    fetchNotas(currentPage, currentSearchTerm);
+document.addEventListener('DOMContentLoaded', async () => {
+    await fetchAllNotas();
+    filterNotas(currentSearchTerm);
 });
