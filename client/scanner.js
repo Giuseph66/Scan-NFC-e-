@@ -25,6 +25,7 @@ let detector = null; // Para BarcodeDetector, se disponível
 let usingDetector = false;
 let lastResult = null; // Armazena o último QR Code lido com sucesso
 let currentNfceData = null; // Armazena os dados completos da NFC-e lida e processada
+let currentProcessingQrCode = null; // Armazena o QR Code que está sendo processado atualmente
 
 // --- Funções de Utilidade ---
 function setStatus(message, type = '') {
@@ -32,6 +33,58 @@ function setStatus(message, type = '') {
     statusEl.className = 'status-message';
     if (type) {
         statusEl.classList.add(type);
+    }
+}
+
+// Função para extrair chave do QR Code
+function extractChaveFromQrCode(qrCode) {
+    try {
+        // Usa a mesma lógica do backend para extrair a chave
+        let p = null;
+        try {
+            p = new URL(qrCode).searchParams.get('p');
+        } catch {
+            const i = qrCode.indexOf('p=');
+            if (i >= 0) p = qrCode.slice(i + 2);
+        }
+        if (!p) return null;
+
+        const [chave] = p.split('|');
+        return chave && /^\d{44}$/.test(chave) ? chave : null;
+    } catch (error) {
+        console.error('Erro ao extrair chave do QR Code:', error);
+        return null;
+    }
+}
+
+// Função para verificar se nota já existe no banco
+async function checkNotaExistsInDatabase(qrCode) {
+    try {
+        const chave = extractChaveFromQrCode(qrCode);
+        if (!chave) {
+            console.warn('Não foi possível extrair chave do QR Code para verificação');
+            return null;
+        }
+
+        console.log('Verificando se nota já existe no banco:', chave);
+
+        // Busca a nota pelo endpoint de detalhes usando a chave
+        const response = await fetch(`/api/notas/detalhes/chave/${encodeURIComponent(chave)}`);
+
+        if (response.ok) {
+            const notaData = await response.json();
+            console.log('Nota encontrada no banco:', notaData);
+            return notaData;
+        } else if (response.status === 404) {
+            console.log('Nota não encontrada no banco');
+            return null;
+        } else {
+            console.warn('Erro ao verificar nota no banco:', response.status);
+            return null;
+        }
+    } catch (error) {
+        console.error('Erro ao verificar nota no banco:', error);
+        return null;
     }
 }
 
@@ -184,6 +237,9 @@ async function onQRCodeRead(rawText) {
     scanning = false; // Pausa a leitura
     stopStream(); // Para a stream
 
+    // Armazena o QR Code que está sendo processado
+    currentProcessingQrCode = rawText;
+
     // Limpa resultados anteriores
     chaveResult.textContent = '-';
     emitenteResult.textContent = '-';
@@ -192,7 +248,7 @@ async function onQRCodeRead(rawText) {
 
     try {
         setStatus('Processando QR Code...', 'info');
-        
+
         // Envia QR Code para o backend processar
         const response = await fetch('/api/scan/process', {
             method: 'POST',
@@ -206,8 +262,9 @@ async function onQRCodeRead(rawText) {
 
         if (result.success) {
             currentNfceData = result.data;
+            currentProcessingQrCode = null; // Limpa o QR Code após sucesso
             displayResult(result.data);
-            
+
             // Verifica se foi salva automaticamente pelo backend
             if (result.salva) {
                 if (result.salva.status === 'salva') {
@@ -225,9 +282,59 @@ async function onQRCodeRead(rawText) {
         }
     } catch (e) {
         console.error("Erro ao processar QR Code:", e);
-        setStatus(`Erro ao processar QR Code: ${e.message}`, 'error');
-        showError('Erro de Processamento', `Erro ao processar QR Code: ${e.message}`);
-        resultSection.style.display = 'none';
+
+        // Verifica se temos um QR Code para verificar no banco
+        if (currentProcessingQrCode) {
+            console.log('Verificando se nota já foi salva anteriormente...');
+
+            // Tenta encontrar a nota no banco de dados
+            checkNotaExistsInDatabase(currentProcessingQrCode).then(notaFromDatabase => {
+                if (notaFromDatabase) {
+                    // Nota encontrada no banco - foi salva anteriormente
+                    console.log('✅ Nota encontrada no banco! Exibindo como sucesso.');
+                    currentNfceData = notaFromDatabase;
+                    displayResult(notaFromDatabase);
+
+                    // Atualiza contador de notas
+                    if (typeof updateNotasCount === 'function') {
+                        updateNotasCount();
+                    }
+
+                    // Mostra sucesso em vez de erro
+                    setStatus(`Nota já estava salva! (ID: ${notaFromDatabase.id})`, 'success');
+                    showSuccess('Nota Encontrada',
+                        `A nota foi processada e salva anteriormente! ID: ${notaFromDatabase.id}`,
+                        {
+                            duration: 8000,
+                            actions: [
+                                {
+                                    text: 'Ver Detalhes',
+                                    primary: true,
+                                    onclick: `window.location.href='details.html?id=${notaFromDatabase.id}'`
+                                }
+                            ]
+                        }
+                    );
+                } else {
+                    // Nota realmente não existe - mostra erro
+                    console.log('❌ Nota não encontrada no banco - erro real.');
+                    setStatus(`Erro ao processar QR Code: ${e.message}`, 'error');
+                    showError('Erro de Processamento', `Erro ao processar QR Code: ${e.message}`);
+                    resultSection.style.display = 'none';
+                }
+            }).catch(error => {
+                console.error('Erro ao verificar nota no banco:', error);
+                // Em caso de erro na verificação, mostra erro original
+                setStatus(`Erro ao processar QR Code: ${e.message}`, 'error');
+                showError('Erro de Processamento', `Erro ao processar QR Code: ${e.message}`);
+                resultSection.style.display = 'none';
+            });
+        } else {
+            // Sem QR Code para verificar - mostra erro normal
+            setStatus(`Erro ao processar QR Code: ${e.message}`, 'error');
+            showError('Erro de Processamento', `Erro ao processar QR Code: ${e.message}`);
+            resultSection.style.display = 'none';
+        }
     }
 }
 

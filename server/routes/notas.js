@@ -382,11 +382,37 @@ router.post('/rebuscar-itens/:id', async (req, res) => {
   }
 });
 
+// Rota para obter detalhes de uma NFC-e específica por chave (para verificação no frontend)
+router.get('/detalhes/chave/:chave', async (req, res) => {
+  try {
+    const { chave } = req.params;
+
+    // Valida se a chave tem o formato correto (44 dígitos)
+    if (!/^\d{44}$/.test(chave)) {
+      return res.status(400).json({ message: 'Chave da NFC-e inválida.' });
+    }
+
+    const nota = await NotaFiscal.findOne({
+      where: { chave },
+      include: [{ model: ItemNota, as: 'itens' }] // Inclui os itens relacionados
+    });
+
+    if (!nota) {
+      return res.status(404).json({ message: 'NFC-e não encontrada.' });
+    }
+
+    res.json(nota);
+  } catch (error) {
+    console.error('Erro ao obter detalhes da NFC-e por chave:', error);
+    res.status(500).json({ message: 'Erro interno ao obter detalhes da NFC-e.', error: error.message });
+  }
+});
+
 // Rota para obter detalhes de uma NFC-e específica por ID numérico (mantém compatibilidade)
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Verifica se é um ID numérico para evitar conflitos com rotas específicas
     if (!/^\d+$/.test(id)) {
       return res.status(404).json({ message: 'Rota não encontrada.' });
