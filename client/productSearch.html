@@ -13,14 +13,14 @@
             <h1>Busca por Produto</h1>
             <nav>
                 <a href="index.html">&larr; Leitor</a> |
-                <a href="history.html">Histórico</a>
+                <a href="history.html">Histórico</a> 
             </nav>
         </header>
 
         <main>
             <section class="search-section">
                 <div class="search-bar">
-                    <input type="text" id="searchProductInput" placeholder="Digite o nome do produto...">
+                    <input type="text" id="searchProductInput" placeholder="Busque por nome, marca, categoria...">
                     <button id="searchProductBtn">Buscar</button>
                 </div>
 
@@ -29,9 +29,12 @@
                         <thead>
                             <tr>
                                 <th>Produto</th>
+                                <th>Nome (IA)</th>
+                                <th>Marca (IA)</th>
+                                <th>Categoria (IA)</th>
                                 <th>Unidade</th>
                                 <th>Valor Unitário</th>
-                                <th>Empresa (Emitente)</th> <!-- Atualizado -->
+                                <th>Empresa (Emitente)</th>
                                 <th>Nota Fiscal</th>
                             </tr>
                         </thead>
@@ -40,6 +43,11 @@
                         </tbody>
                     </table>
                 </div>
+                
+                <div id="aiWarningBox" class="info-box" style="display:none;">
+                    <p><strong>💡 Dica:</strong> Alguns resultados foram encontrados por dados padronizados pela IA (badge <span class="ai-badge-inline">🤖 IA</span>). Verifique se é realmente o produto desejado.</p>
+                </div>
+                
                 <div id="searchMessage" class="status-message" style="display:none;"></div>
             </section>
         </main>

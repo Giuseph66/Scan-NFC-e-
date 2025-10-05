@@ -2,7 +2,11 @@
 const express = require('express');
 const router = express.Router();
 const { NotaFiscal, ItemNota, sequelize } = require('../models'); // Importa sequelize
+const { padronizarItensDaNota } = require('../services/padronizacaoService');
 const { Op } = require('sequelize'); // Importa operadores
+const fs = require('fs');
+const path = require('path');
+const { processProductWithPrompt, processProductsBatchWithPrompt } = require('../services/geminiServiceNew');
 
 // Função para converter formato brasileiro para decimal
 function converterParaDecimal(valor) {
@@ -58,6 +62,17 @@ router.post('/salvar', async (req, res) => {
       await transaction.commit();
 
       res.status(201).json({ message: 'NFC-e salva com sucesso!', id: novaNota.id });
+
+      // Dispara padronização automática (não bloqueante)
+      setTimeout(async () => {
+        try {
+          console.log(`🚀 Padronização automática (manual) para nota ${novaNota.id}`);
+          const r = await padronizarItensDaNota(novaNota.id);
+          console.log('✅ Padronização automática (manual):', { updated: r.updated, success: r.success });
+        } catch (e) {
+          console.warn('⚠️ Padronização automática (manual) falhou:', e.message);
+        }
+      }, 0);
     } catch (err) {
       // Reverte a transação em caso de erro
       await transaction.rollback();
@@ -77,7 +92,14 @@ router.get('/', async (req, res) => {
     const offset = (page - 1) * limit;
 
     const { count, rows } = await NotaFiscal.findAndCountAll({
-      attributes: ['id', 'chave', 'nomeEmitente', 'createdAt'], // Seleciona campos relevantes
+      attributes: [
+        'id', 
+        'chave', 
+        'nomeEmitente', 
+        'createdAt',
+        // Adiciona contagem de itens usando subquery
+        [sequelize.literal('(SELECT COUNT(*) FROM itens_nota WHERE itens_nota.notaFiscalId = NotaFiscal.id)'), 'totalItens']
+      ],
       limit,
       offset,
       order: [['createdAt', 'DESC']] // Ordena pela mais recente
@@ -104,13 +126,32 @@ router.get('/itens/buscar', async (req, res) => {
       return res.status(400).json({ message: 'Termo de busca "q" é obrigatório.' });
     }
 
-    // Busca itens cuja descrição contenha o termo (case-insensitive)
+    // Busca itens cuja descrição, nome padronizado, marca ou categoria contenha o termo (case-insensitive)
     // e inclui os dados da nota fiscal associada (emitente)
     const itens = await ItemNota.findAll({
       where: {
-        descricao: {
-          [Op.like]: `%${termo}%` // LIKE '%termo%'
-        }
+        [Op.or]: [
+          {
+            descricao: {
+              [Op.like]: `%${termo}%` // LIKE '%termo%' na descrição original
+            }
+          },
+          {
+            nomePadronizado: {
+              [Op.like]: `%${termo}%` // LIKE '%termo%' no nome padronizado pela IA
+            }
+          },
+          {
+            marca: {
+              [Op.like]: `%${termo}%` // LIKE '%termo%' na marca
+            }
+          },
+          {
+            categoria: {
+              [Op.like]: `%${termo}%` // LIKE '%termo%' na categoria
+            }
+          }
+        ]
       },
       include: [{
         model: NotaFiscal,
@@ -121,19 +162,34 @@ router.get('/itens/buscar', async (req, res) => {
     });
 
     // Formata os resultados para facilitar o uso no frontend
-    const resultados = itens.map(item => ({
-      id: item.id,
-      descricao: item.descricao,
-      quantidade: item.quantidade,
-      unidade: item.unidade,
-      valorUnitario: item.valorUnitario,
-      valorTotal: item.valorTotal,
-      notaFiscalId: item.notaFiscalId,
-      emitente: {
-        nome: item.notaFiscal?.nomeEmitente || 'Desconhecido'
-        // CNPJ foi removido do retorno por simplicidade na tela de busca
-      }
-    }));
+    const resultados = itens.map(item => {
+      const termoLower = termo.toLowerCase();
+      const descricaoMatch = item.descricao && item.descricao.toLowerCase().includes(termoLower);
+      
+      // Determina se o match foi por dados padronizados pela IA (nome, marca ou categoria)
+      const matchPorIA = !descricaoMatch && (
+        (item.nomePadronizado && item.nomePadronizado.toLowerCase().includes(termoLower)) ||
+        (item.marca && item.marca.toLowerCase().includes(termoLower)) ||
+        (item.categoria && item.categoria.toLowerCase().includes(termoLower))
+      );
+      
+      return {
+        id: item.id,
+        descricao: item.descricao,
+        nomePadronizado: item.nomePadronizado,
+        marca: item.marca,
+        categoria: item.categoria,
+        quantidade: item.quantidade,
+        unidade: item.unidade,
+        valorUnitario: item.valorUnitario,
+        valorTotal: item.valorTotal,
+        notaFiscalId: item.notaFiscalId,
+        matchPorIA: matchPorIA, // Flag indicando se foi encontrado por dados da IA
+        emitente: {
+          nome: item.notaFiscal?.nomeEmitente || 'Desconhecido'
+        }
+      };
+    });
 
     res.json({ itens: resultados, total: resultados.length });
   } catch (error) {
@@ -379,6 +435,109 @@ router.post('/rebuscar-itens/:id', async (req, res) => {
       message: 'Erro interno na rebusca de itens.', 
       error: error.message 
     });
+  }
+});
+
+// Padroniza itens de uma NFC-e com IA (Gemini)
+router.post('/padronizar-itens/:id', async (req, res) => {
+  let updatedCount = 0;
+  const results = [];
+  try {
+    const { id } = req.params;
+
+    // Lê prompt do arquivo raiz
+    const promptPath = path.join(__dirname, '..', '..', 'prompt.txt');
+    let systemPrompt = '';
+    try {
+      systemPrompt = fs.readFileSync(promptPath, 'utf8');
+      console.log('🔍 Prompt lido:', systemPrompt);
+    } catch (e) {
+      console.warn('⚠️ Não foi possível ler prompt.txt, usando prompt padrão do serviço.', e.message);
+      systemPrompt = null;
+      console.log('🔍 Prompt não lido:', systemPrompt);
+    }
+
+    // Busca nota com itens
+    const nota = await NotaFiscal.findByPk(id, { include: [{ model: ItemNota, as: 'itens' }] });
+    if (!nota) {
+      return res.status(404).json({ success: false, message: 'NFC-e não encontrada.' });
+    }
+
+    if (!nota.itens || nota.itens.length === 0) {
+      return res.json({ success: true, message: 'Nenhum item para padronizar.', updated: 0 });
+    }
+
+    console.log(`🧠 Padronizando itens da nota ${id} (total=${nota.itens.length})`);
+
+    // Processamento em lotes de 10 itens
+    const BATCH_SIZE = 10;
+    for (let start = 0; start < nota.itens.length; start += BATCH_SIZE) {
+      const slice = nota.itens.slice(start, start + BATCH_SIZE);
+      // Tenta IA em lote
+      let batchResult = null;
+      try {
+        batchResult = systemPrompt
+          ? await processProductsBatchWithPrompt(systemPrompt, slice.map(it => ({ id: it.id, descricao: it.descricao || '' })))
+          : await processProductsBatchWithPrompt('', slice.map(it => ({ id: it.id, descricao: it.descricao || '' })));
+      } catch (e) {
+        console.warn('⚠️ Falha no processamento em lote, caindo para item a item:', e.message);
+      }
+
+      const idToResultado = new Map();
+      if (batchResult && batchResult.success && Array.isArray(batchResult.data)) {
+        batchResult.data.forEach(el => { idToResultado.set(el.id, el.resultado); });
+      }
+
+      for (const item of slice) {
+      const descricao = item.descricao || '';
+      if (!descricao.trim()) {
+        results.push({ itemId: item.id, success: false, error: 'Descrição vazia' });
+        continue;
+      }
+
+        // Usa o resultado em lote, se disponível; caso contrário, faz fallback item a item
+        let data = idToResultado.get(item.id) || null;
+        if (!data) {
+          console.log(`➡️ IA input (item ${item.id}, fallback):`, descricao);
+          const aiResult = systemPrompt
+            ? await processProductWithPrompt(systemPrompt, descricao)
+            : await processProductWithPrompt('', descricao);
+          if (!aiResult.success || !aiResult.data) {
+            console.warn(`⚠️ IA falhou para item ${item.id}:`, aiResult.error);
+            results.push({ itemId: item.id, success: false, error: aiResult.error || 'Falha IA' });
+            continue;
+          }
+          data = aiResult.data;
+        }
+      // Mapeia campos
+      const updates = {
+        tipoEmbalagem: data.tipo_embalagem || null,
+        nomePadronizado: data.nome_produto || null,
+        marca: data.marca || null,
+        quantidadePadronizada: Number.isInteger(data.quantidade) ? data.quantidade : (typeof data.quantidade === 'number' ? Math.round(data.quantidade) : null),
+        peso: data.peso || null,
+        categoria: data.categoria || null
+      };
+
+        console.log(`⬅️ IA output (item ${item.id}):`, updates);
+        // Transação curta por item para reduzir lock
+        const tx = await sequelize.transaction();
+        try {
+          await item.update(updates, { transaction: tx });
+          await tx.commit();
+          updatedCount++;
+          results.push({ itemId: item.id, success: true, updates });
+        } catch (e) {
+          await tx.rollback();
+          console.error(`❌ Erro ao atualizar item ${item.id}:`, e);
+          results.push({ itemId: item.id, success: false, error: e.message });
+        }
+      }
+    }
+    res.json({ success: true, message: `Itens padronizados: ${updatedCount}/${nota.itens.length}`, updated: updatedCount, results });
+  } catch (error) {
+    console.error('Erro ao padronizar itens:', error);
+    res.status(500).json({ success: false, message: 'Erro interno ao padronizar itens.', error: error.message, updated: updatedCount, results });
   }
 });
 

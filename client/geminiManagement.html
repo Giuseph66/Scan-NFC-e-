@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>NFC-e Scan - Gerenciar Chaves Gemini</title>
+<link rel="stylesheet" href="styles/index.css">
+<link rel="stylesheet" href="styles/geminiManagement.css">
+<link rel="stylesheet" href="styles/notifications.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Gerenciamento de Chaves Gemini API</h1>
+            <p>Configure e gerencie suas chaves de API do Google Gemini para processamento inteligente de produtos.</p>
+            <nav>
+                <a href="index.html">&larr; Leitor</a> |
+                <a href="history.html">Histórico</a> |
+                <a href="productSearch.html">Buscar Produtos</a> 
+            </nav>
+        </header>
+
+        <main>
+            <section class="stats-section">
+                <h2>Estatísticas Gerais</h2>
+                <div class="stats-grid" id="statsContainer">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalKeys">-</div>
+                        <div class="stat-label">Total de Chaves</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="activeKeys">-</div>
+                        <div class="stat-label">Chaves Ativas</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalUsage">-</div>
+                        <div class="stat-label">Total de Uso</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalErrors">-</div>
+                        <div class="stat-label">Total de Erros</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="form-section">
+                <h2>Adicionar Nova Chave</h2>
+                <form id="newKeyForm" class="key-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="apiKey">Chave de API:</label>
+                            <div class="api-key-input-group">
+                                <input type="password" id="apiKey" placeholder="Cole sua chave de API do Google Gemini" required>
+                                <button type="button" class="btn-secondary btn-small" id="toggleNewKey">Mostrar</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Nome da Chave:</label>
+                            <input type="text" id="keyNameDisplay" readonly>
+                            <small>Gerado automaticamente</small>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="keyNotes">Observações (opcional):</label>
+                            <textarea id="keyNotes" placeholder="Observações sobre esta chave, limitações, etc." rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Adicionar Chave</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="keys-section">
+                <div class="section-header">
+                    <h2>Chaves Configuradas</h2>
+                    <button id="refreshKeysBtn" class="btn-refresh">🔄 Atualizar</button>
+                </div>
+
+                <div id="keysContainer" class="keys-container">
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 NFC-e Scan App</p>
+        </footer>
+    </div>
+
+    <div id="editModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Chave</h3>
+                <span class="modal-close">&times;</span>
+            </div>
+
+            <div class="current-key-info">
+                <div class="info-item">
+                    <strong>ID:</strong> <span id="editKeyInfoId">-</span>
+                </div>
+                <div class="info-item">
+                    <strong>Criada em:</strong> <span id="editKeyInfoCreated">-</span>
+                </div>
+                <div class="info-item">
+                    <strong>Última atualização:</strong> <span id="editKeyInfoUpdated">-</span>
+                </div>
+            </div>
+
+            <form id="editKeyForm" class="key-form">
+                <input type="hidden" id="editKeyId">
+
+                <div class="form-section">
+                    <div class="form-group">
+                        <label for="editKeyName">Nome da Chave: <span class="required">*</span></label>
+                        <input type="text" id="editKeyName" required placeholder="Nome identificador da chave">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-group">
+                        <label for="editApiKey">Chave de API:</label>
+                        <div class="api-key-input-group">
+                            <input type="password" id="editApiKey" placeholder="Nova chave de API (opcional)">
+                            <div class="current-key-display">
+                                <small>Chave atual: <span id="currentApiKeyPartial">••••••••</span></small>
+                            </div>
+                            <button type="button" class="btn-secondary btn-small" id="toggleEditKey">Mostrar</button>
+                        </div>
+                        <small class="form-hint">Deixe vazio para manter a chave atual</small>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editKeyActive">Status: <span class="required">*</span></label>
+                            <select id="editKeyActive">
+                                <option value="true">✅ Ativa</option>
+                                <option value="false">❌ Inativa</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="editKeyNotes">Observações:</label>
+                            <textarea id="editKeyNotes" rows="3" placeholder="Observações sobre esta chave, limitações, etc."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="key-stats-modal">
+                    <h4>Estatísticas de Uso</h4>
+                    <div class="stats-row">
+                        <div class="stat-item-modal">
+                            <div class="stat-value-modal" id="editUsageCount">-</div>
+                            <div class="stat-label-modal">Usos</div>
+                        </div>
+                        <div class="stat-item-modal">
+                            <div class="stat-value-modal" id="editErrorCount">-</div>
+                            <div class="stat-label-modal">Erros</div>
+                        </div>
+                        <div class="stat-item-modal">
+                            <div class="stat-value-modal" id="editLastUsed">-</div>
+                            <div class="stat-label-modal">Último Uso</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">💾 Salvar Alterações</button>
+                    <button type="button" class="btn-secondary modal-cancel">❌ Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/notifications.js"></script>
+    <script src="js/notasTracker.js"></script>
+    <script src="geminiManagement.js"></script>
+    <script>
+    (function(){
+        const newKey = document.getElementById('apiKey');
+        const toggleNew = document.getElementById('toggleNewKey');
+        if (newKey && toggleNew) {
+            toggleNew.addEventListener('click', () => {
+                const isPwd = newKey.type === 'password';
+                newKey.type = isPwd ? 'text' : 'password';
+                toggleNew.textContent = isPwd ? 'Ocultar' : 'Mostrar';
+            });
+        }
+        const editKey = document.getElementById('editApiKey');
+        const toggleEdit = document.getElementById('toggleEditKey');
+        if (editKey && toggleEdit) {
+            toggleEdit.addEventListener('click', () => {
+                const isPwd = editKey.type === 'password';
+                editKey.type = isPwd ? 'text' : 'password';
+                toggleEdit.textContent = isPwd ? 'Ocultar' : 'Mostrar';
+            });
+        }
+    })();
+    </script>
+</body>
+</html>

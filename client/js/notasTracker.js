@@ -176,6 +176,33 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         notasTracker.checkForNewNotas();
     }, 500);
+
+    // Atalho oculto: 3 cliques rápidos no footer → geminiManagement.html
+    try {
+        const footer = document.querySelector('footer');
+        if (footer) {
+            let clickCount = 0;
+            let lastClickTime = 0;
+            const thresholdMs = 700; // intervalo máximo entre cliques
+
+            footer.addEventListener('click', () => {
+                const now = Date.now();
+                if (now - lastClickTime > thresholdMs) {
+                    clickCount = 0;
+                }
+                clickCount += 1;
+                lastClickTime = now;
+
+                if (clickCount >= 3) {
+                    clickCount = 0;
+                    window.location.href = 'geminiManagement.html';
+                }
+            });
+        }
+    } catch (e) {
+        // Silencioso: não impacta páginas sem footer
+        console.debug('Atalho de triple-click indisponível:', e);
+    }
 });
 
 // Exporta para uso em módulos

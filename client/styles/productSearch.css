@@ -110,6 +110,34 @@ section {
   color: var(--primary-color);
 }
 
+/* Caixa de informação */
+.info-box {
+  background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+  border-left: 4px solid #7209b7;
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+  margin-bottom: var(--spacing-lg);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.info-box p {
+  margin: 0;
+  color: #2d3748;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.ai-badge-inline {
+  display: inline-block;
+  background: linear-gradient(135deg, #7209b7, #9d4edd);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  vertical-align: middle;
+}
+
 /* Barra de Busca */
 .search-bar {
   display: flex;
@@ -195,6 +223,46 @@ section {
 
 #productsTable a:hover {
   text-decoration: underline;
+}
+
+/* Estilos para dados padronizados pela IA */
+.ai-data {
+  color: #7209b7;
+  font-weight: 500;
+  font-style: italic;
+}
+
+.ai-match {
+  background-color: #f3e5f5 !important;
+  border-left: 4px solid #7209b7;
+}
+
+.ai-match:hover {
+  background-color: #e1bee7 !important;
+}
+
+.ai-match-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.ai-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #7209b7, #9d4edd);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+/* Tooltip para avisos */
+.ai-data[title] {
+  cursor: help;
+  border-bottom: 1px dotted #7209b7;
 }
 
 /* Mensagem de Status */

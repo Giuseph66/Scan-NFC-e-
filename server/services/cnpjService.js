@@ -2,8 +2,9 @@
 const fetch = require('node-fetch');
 
 /**
- * Serviço para consultar dados de CNPJ na Receita Federal
- * Usa API pública e gratuita para buscar informações completas da empresa
+ * Serviço para consultar dados de CNPJ usando OpenCNPJ
+ * Documentação: https://opencnpj.org/
+ * Endpoint: GET https://api.opencnpj.org/{CNPJ}
  */
 
 // Função para limpar CNPJ (remover máscara)
@@ -93,8 +94,8 @@ async function buscarDadosCNPJ(cnpj) {
     
     console.log(`🔍 Buscando dados do CNPJ: ${cnpjLimpo}`);
     
-    // Usa a API pública da Receita Federal via proxy
-    const url = `https://receitaws.com.br/v1/cnpj/${cnpjLimpo}`;
+    // Usa a API pública do OpenCNPJ (aceita com/sem pontuação)
+    const url = `https://api.opencnpj.org/${cnpjLimpo}`;
     
     const response = await fetch(url, {
       method: 'GET',
@@ -105,25 +106,38 @@ async function buscarDadosCNPJ(cnpj) {
       timeout: 10000 // 10 segundos de timeout
     });
     
+    // Tratamento específico conforme documentação do OpenCNPJ
+    if (response.status === 404) {
+      console.warn(`CNPJ não encontrado no OpenCNPJ: ${cnpjLimpo}`);
+      return null;
+    }
+    if (response.status === 429) {
+      console.warn(`Rate limit do OpenCNPJ excedido (429). Tentará novamente via retry/backoff.`);
+      return null; // permite retry com backoff na camada superior
+    }
     if (!response.ok) {
-      throw new Error(`Erro na API: ${response.status} ${response.statusText}`);
+      throw new Error(`Erro na API OpenCNPJ: ${response.status} ${response.statusText}`);
     }
     
     const dados = await response.json();
     
-    // Verifica se a API retornou erro
-    if (dados.status === 'ERROR') {
-      console.warn(`Erro na API da Receita: ${dados.message}`);
-      return null;
+    // Extrai telefone (primeiro número, caso exista)
+    let telefoneFormatado = null;
+    if (Array.isArray(dados.telefones) && dados.telefones.length > 0) {
+      const tel = dados.telefones[0];
+      if (tel && (tel.ddd || tel.numero)) {
+        const ddd = tel.ddd ? `(${tel.ddd}) ` : '';
+        telefoneFormatado = `${ddd}${tel.numero || ''}`.trim();
+      }
     }
-    
+
     // Mapeia os dados da API para o formato do nosso banco
     const dadosEmpresa = {
-      cnpj: dados.cnpj,
-      nomeEmitente: dados.nome || dados.razao_social,
-      nomeFantasia: dados.fantasia || null,
-      situacaoCadastral: dados.situacao || null,
-      dataAbertura: formatarData(dados.abertura),
+      cnpj: dados.cnpj ? limparCNPJ(dados.cnpj) : cnpjLimpo,
+      nomeEmitente: dados.razao_social || null,
+      nomeFantasia: dados.nome_fantasia || null,
+      situacaoCadastral: dados.situicao_cadastral || dados.situacao_cadastral || null,
+      dataAbertura: formatarData(dados.data_inicio_atividade),
       capitalSocial: formatarValor(dados.capital_social),
       naturezaJuridica: dados.natureza_juridica || null,
       endereco: dados.logradouro ? 
@@ -131,9 +145,9 @@ async function buscarDadosCNPJ(cnpj) {
       cep: dados.cep || null,
       municipio: dados.municipio || null,
       uf: dados.uf || null,
-      telefone: dados.telefone || null,
+      telefone: telefoneFormatado,
       email: dados.email || null,
-      ieEmitente: dados.inscricao_estadual || null
+      ieEmitente: null // OpenCNPJ não fornece IE
     };
     
     console.log(`✅ Dados do CNPJ encontrados: ${dadosEmpresa.nomeEmitente}`);

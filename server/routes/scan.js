@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const { NotaFiscal, ItemNota, sequelize } = require('../models');
+const { padronizarItensDaNota } = require('../services/padronizacaoService');
 const { Op } = require('sequelize');
 const { buscarDadosCNPJComRetry } = require('../services/cnpjService');
 
@@ -217,6 +218,18 @@ router.post('/process', async (req, res) => {
             try {
                 const resultadoSalvamento = await salvarNfceAutomaticamente(nfceData);
                 console.log("NFC-e salva automaticamente:", resultadoSalvamento);
+                // Dispara padronização automática (não bloqueante)
+                if (resultadoSalvamento?.id) {
+                    setTimeout(async () => {
+                        try {
+                            console.log(`🚀 Padronização automática (scan) para nota ${resultadoSalvamento.id}`);
+                            const r = await padronizarItensDaNota(resultadoSalvamento.id);
+                            console.log('✅ Padronização automática (scan):', { updated: r.updated, success: r.success });
+                        } catch (e) {
+                            console.warn('⚠️ Padronização automática (scan) falhou:', e.message);
+                        }
+                    }, 0);
+                }
                 
                 res.json({
                     success: true,
@@ -250,6 +263,18 @@ router.post('/process', async (req, res) => {
             try {
                 const resultadoSalvamento = await salvarNfceAutomaticamente(nfceData);
                 console.log("NFC-e salva automaticamente (dados básicos):", resultadoSalvamento);
+                // Dispara padronização automática (não bloqueante)
+                if (resultadoSalvamento?.id) {
+                    setTimeout(async () => {
+                        try {
+                            console.log(`🚀 Padronização automática (scan/básico) para nota ${resultadoSalvamento.id}`);
+                            const r = await padronizarItensDaNota(resultadoSalvamento.id);
+                            console.log('✅ Padronização automática (scan/básico):', { updated: r.updated, success: r.success });
+                        } catch (e) {
+                            console.warn('⚠️ Padronização automática (scan/básico) falhou:', e.message);
+                        }
+                    }, 0);
+                }
                 
                 res.json({
                     success: true,

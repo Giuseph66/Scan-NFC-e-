@@ -39,6 +39,31 @@ const ItemNota = sequelize.define('ItemNota', {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
   },
+  // Campos padronizados pela IA (opcionais)
+  tipoEmbalagem: {
+    type: DataTypes.STRING(50),
+    allowNull: true
+  },
+  nomePadronizado: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  marca: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  quantidadePadronizada: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  peso: {
+    type: DataTypes.STRING(20),
+    allowNull: true
+  },
+  categoria: {
+    type: DataTypes.STRING(50),
+    allowNull: true
+  },
   // Foreign key para NotaFiscal
   notaFiscalId: {
     type: DataTypes.INTEGER,

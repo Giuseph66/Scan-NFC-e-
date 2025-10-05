@@ -13,7 +13,7 @@
             <h1>Detalhes da NFC-e</h1>
             <nav>
                 <a href="history.html">&larr; Voltar ao Histórico</a> |
-                <a href="productSearch.html">Buscar por Produto</a>
+                <a href="productSearch.html">Buscar por Produto</a> 
             </nav>
         </header>
 
@@ -129,6 +129,16 @@
                     </div>
 
                     <h2>Itens</h2>
+                    
+                    <div class="search-items-container">
+                        <input type="text" id="searchItemsInput" placeholder="🔍 Buscar item na tabela..." />
+                        <span id="searchItemsCounter" class="search-counter"></span>
+                    </div>
+                    
+                    <div class="action-buttons" style="justify-content: flex-end; margin-bottom: 10px; gap: 10px;">
+                        <button id="padronizarItensBtn" class="rebusca-button">🤖 Padronizar Itens (IA)</button>
+                        <button id="toggleStdBtn" class="sefaz-button" style="display:none;">Mostrar itens padronizados</button>
+                    </div>
                     <div class="table-container">
                         <table id="itensDetailTable">
                             <thead>
@@ -177,5 +187,6 @@
     <script src="js/notifications.js"></script>
     <script src="js/notasTracker.js"></script>
     <script src="details.js"></script>
+
 </body>
 </html>

@@ -212,6 +212,42 @@ section {
   border: 2px solid #28a745;
 }
 
+/* Campo de busca de itens */
+.search-items-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-sm);
+  background-color: #f8f9fa;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+}
+
+#searchItemsInput {
+  flex: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+#searchItemsInput:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+}
+
+.search-counter {
+  font-size: 0.9rem;
+  color: #6c757d;
+  font-weight: 500;
+  white-space: nowrap;
+  min-width: 100px;
+  text-align: right;
+}
+
 /* Tabela de Itens */
 .table-container {
   overflow-x: auto;
@@ -251,6 +287,108 @@ section {
 
 #itensDetailTable tbody tr:hover {
   background-color: #e7f5ff;
+}
+
+/* Destaque para itens que correspondem à busca */
+#itensDetailTable tbody tr.search-match {
+  background-color: #fff3cd !important;
+  border-left: 4px solid #ffc107;
+  font-weight: 500;
+}
+
+#itensDetailTable tbody tr.search-match:hover {
+  background-color: #ffe69c !important;
+}
+
+#itensDetailTable tbody tr.search-no-match {
+  opacity: 0.5;
+}
+
+/* Botão Ver Padronizado */
+.btn-view-std {
+  padding: 6px 10px;
+  border: 1px solid var(--primary-color);
+  background: #fff;
+  color: var(--primary-color);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-view-std:hover {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+/* Modal genérico (reaproveita estilo do geminiManagement) */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: var(--spacing-lg);
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+}
+
+.modal-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 { margin: 0; }
+
+.modal-close {
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.modal-body { padding: var(--spacing-lg); }
+
+.modal-section { margin-bottom: var(--spacing-xl); }
+
+.modal-section h4 {
+  margin-bottom: var(--spacing-md);
+  color: var(--primary-color);
+}
+
+.kv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.kv-grid > div { display: flex; flex-direction: column; }
+.kv-grid > div.full { grid-column: 1 / -1; }
+.kv-grid label {
+  font-weight: 600;
+  margin-bottom: var(--spacing-xs);
+  color: #495057;
+}
+.kv-grid span {
+  padding: var(--spacing-sm);
+  background: #f8f9fa;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
 }
 
 /* Seção de Total */

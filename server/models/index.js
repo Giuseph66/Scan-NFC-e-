@@ -3,6 +3,7 @@
 
 const NotaFiscal = require('./NotaFiscal');
 const ItemNota = require('./ItemNota');
+const GeminiKey = require('./GeminiKey');
 const sequelize = require('../config/db'); // Importa a instância do Sequelize
 
 // Definindo a associação 1:N entre NotaFiscal e ItemNota
@@ -20,5 +21,6 @@ ItemNota.belongsTo(NotaFiscal, {
 module.exports = {
   NotaFiscal,
   ItemNota,
+  GeminiKey,
   sequelize // Exporta a instância para uso em consultas raw, por exemplo
 };

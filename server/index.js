@@ -11,6 +11,36 @@ const PORT = process.env.PORT || 1425
 // Middleware para parsing de JSON no body
 app.use(express.json());
 
+// Proteção por Basic Auth para páginas sensíveis
+const GEMINI_USER = process.env.GEMINI_ADMIN_USER || process.env.ADMIN_USER || '';
+const GEMINI_PASS = process.env.GEMINI_ADMIN_PASS || process.env.ADMIN_PASS || 'a';
+
+function basicAuth(req, res, next) {
+  try {
+    const header = req.headers.authorization || '';
+    const [scheme, encoded] = header.split(' ');
+    if (scheme === 'Basic' && encoded) {
+      const decoded = Buffer.from(encoded, 'base64').toString('utf8');
+      const idx = decoded.indexOf(':');
+      const user = idx >= 0 ? decoded.slice(0, idx) : '';
+      const pass = idx >= 0 ? decoded.slice(idx + 1) : '';
+      if (user === GEMINI_USER && pass === GEMINI_PASS) {
+        return next();
+      }
+    }
+  } catch (_) {}
+  res.set('WWW-Authenticate', 'Basic realm="Restrito", charset="UTF-8"');
+  return res.status(401).send('Autenticação necessária');
+}
+
+// Intercepta acesso à página geminiManagement antes do estático
+app.use((req, res, next) => {
+  if (req.path === '/geminiManagement.html') {
+    return basicAuth(req, res, next);
+  }
+  next();
+});
+
 // Middleware para servir arquivos estáticos da pasta 'client'
 // Assumindo que a pasta 'client' está no mesmo nível de 'server'
 app.use(express.static(path.join(__dirname, '..', 'client')));
@@ -28,6 +58,7 @@ app.get('/', (req, res) => {
 // Rotas da API
 app.use('/api/notas', require('./routes/notas'));
 app.use('/api/scan', require('./routes/scan'));
+app.use('/api/gemini', require('./routes/gemini'));
 
 // Função para verificar e adicionar colunas necessárias
 async function verificarEstruturaBanco() {
@@ -45,6 +76,24 @@ async function verificarEstruturaBanco() {
         ALTER TABLE itens_nota ADD COLUMN notaFiscalId INTEGER;
       `);
       console.log('✅ Coluna notaFiscalId adicionada com sucesso.');
+    }
+
+    // Adiciona colunas padronizadas se faltarem em itens_nota
+    const colunasPadronizadas = [
+      { nome: 'tipoEmbalagem', tipo: 'VARCHAR(50)' },
+      { nome: 'nomePadronizado', tipo: 'VARCHAR(255)' },
+      { nome: 'marca', tipo: 'VARCHAR(100)' },
+      { nome: 'quantidadePadronizada', tipo: 'INTEGER' },
+      { nome: 'peso', tipo: 'VARCHAR(20)' },
+      { nome: 'categoria', tipo: 'VARCHAR(50)' }
+    ];
+    for (const coluna of colunasPadronizadas) {
+      const existe = resultsItens.some(col => col.name === coluna.nome);
+      if (!existe) {
+        console.log(`🔧 Adicionando coluna ${coluna.nome} à tabela itens_nota...`);
+        await sequelize.query(`ALTER TABLE itens_nota ADD COLUMN ${coluna.nome} ${coluna.tipo};`);
+        console.log(`✅ Coluna ${coluna.nome} adicionada com sucesso.`);
+      }
     }
 
     // Verifica se as novas colunas de CNPJ existem na tabela notas_fiscais

@@ -88,16 +88,18 @@ function renderTable(notas) {
         const message = currentSearchTerm ? 
             `Nenhuma NFC-e encontrada para "${currentSearchTerm}".` : 
             'Nenhuma NFC-e encontrada.';
-        historyTableBody.innerHTML = `<tr><td colspan="5">${message}</td></tr>`;
+        historyTableBody.innerHTML = `<tr><td colspan="6">${message}</td></tr>`;
         return;
     }
 
     notas.forEach(nota => {
         const row = document.createElement('tr');
+        const totalItens = nota.totalItens || 0;
         row.innerHTML = `
             <td>${nota.id}</td>
             <td>${truncateString(nota.chave, 20)}</td>
             <td>${truncateString(nota.nomeEmitente)}</td>
+            <td style="text-align: center;">${totalItens}</td>
             <td>${formatDate(nota.createdAt)}</td>
             <td>
                 <button class="view-btn" data-id="${nota.id}">Ver Detalhes</button>

@@ -31,6 +31,16 @@ const viewSefazBtn = document.getElementById('viewSefazBtn');
 const rebuscaSection = document.getElementById('rebuscaSection');
 const rebuscaBtn = document.getElementById('rebuscaBtn');
 const rebuscaStatus = document.getElementById('rebuscaStatus');
+const padronizarItensBtn = document.getElementById('padronizarItensBtn');
+const toggleStdBtn = document.getElementById('toggleStdBtn');
+const searchItemsInput = document.getElementById('searchItemsInput');
+const searchItemsCounter = document.getElementById('searchItemsCounter');
+
+// --- Variáveis globais ---
+let allItems = []; // Armazena todos os itens para filtragem
+let searchTimeout = null;
+let isExpanded = false; // Estado de expansão dos campos padronizados
+let currentNota = null; // Armazena a nota atual para referência
 
 // --- Funções de Utilidade ---
 function formatDate(dateString) {
@@ -147,9 +157,204 @@ function calculateTotal(itens) {
     return total;
 }
 
+// Função para verificar se item corresponde à busca
+function itemMatchesSearch(item, term) {
+    if (!term) return true;
+    
+    // Campos básicos
+    const basicText = `${item.codigo || ''} ${item.descricao || ''} ${item.quantidade || ''} ${item.unidade || ''} ${item.valorUnitario || ''} ${item.valorTotal || ''}`.toLowerCase();
+    
+    // Campos padronizados pela IA
+    const aiText = `${item.tipoEmbalagem || ''} ${item.nomePadronizado || ''} ${item.marca || ''} ${item.quantidadePadronizada || ''} ${item.peso || ''} ${item.categoria || ''}`.toLowerCase();
+    
+    return basicText.includes(term) || aiText.includes(term);
+}
+
+// Função para verificar se o match foi nos campos da IA
+function matchedInAIFields(item, term) {
+    if (!term) return false;
+    
+    const aiText = `${item.tipoEmbalagem || ''} ${item.nomePadronizado || ''} ${item.marca || ''} ${item.quantidadePadronizada || ''} ${item.peso || ''} ${item.categoria || ''}`.toLowerCase();
+    const basicText = `${item.codigo || ''} ${item.descricao || ''} ${item.quantidade || ''} ${item.unidade || ''} ${item.valorUnitario || ''} ${item.valorTotal || ''}`.toLowerCase();
+    
+    // Retorna true se encontrou nos campos da IA mas não nos campos básicos
+    return aiText.includes(term) && !basicText.includes(term);
+}
+
+// Função para renderizar itens na tabela
+function renderItems(items, searchTerm = '') {
+    itensDetailTableBody.innerHTML = '';
+    
+    if (!items || items.length === 0) {
+        const colspan = isExpanded ? 11 : 6;
+        const row = document.createElement('tr');
+        row.innerHTML = `<td colspan="${colspan}">Nenhum item encontrado.</td>`;
+        itensDetailTableBody.appendChild(row);
+        return;
+    }
+    
+    const term = searchTerm.toLowerCase().trim();
+    let matchedItems = [];
+    let unmatchedItems = [];
+    let hasAIMatch = false;
+    
+    // Separa itens que correspondem e que não correspondem à busca
+    items.forEach(item => {
+        if (itemMatchesSearch(item, term)) {
+            matchedItems.push(item);
+            // Verifica se algum match foi nos campos da IA
+            if (matchedInAIFields(item, term)) {
+                hasAIMatch = true;
+            }
+        } else {
+            unmatchedItems.push(item);
+        }
+    });
+    
+    // Se encontrou match nos campos da IA e a tabela não está expandida, expande automaticamente
+    if (hasAIMatch && !isExpanded && currentNota) {
+        expandTable();
+    }
+    
+    // Renderiza itens que correspondem primeiro
+    matchedItems.forEach(item => {
+        const row = document.createElement('tr');
+        if (term) {
+            row.classList.add('search-match');
+        }
+        row.innerHTML = `
+            <td>${item.codigo || '-'}</td>
+            <td>${item.descricao || '-'}</td>
+            <td>${item.quantidade || '-'}</td>
+            <td>${item.unidade || '-'}</td>
+            <td>${formatCurrency(item.valorUnitario)}</td>
+            <td>${formatCurrency(item.valorTotal)}</td>
+        `;
+        
+        // Adiciona colunas padronizadas se expandido
+        if (isExpanded) {
+            const aiCells = [
+                item.tipoEmbalagem || '-',
+                item.nomePadronizado || '-',
+                item.marca || '-',
+                item.peso || '-',
+                item.categoria || '-'
+            ];
+            aiCells.forEach(val => {
+                const td = document.createElement('td');
+                td.textContent = val;
+                row.appendChild(td);
+            });
+        }
+        
+        itensDetailTableBody.appendChild(row);
+    });
+    
+    // Renderiza itens que não correspondem depois
+    unmatchedItems.forEach(item => {
+        const row = document.createElement('tr');
+        row.classList.add('search-no-match');
+        row.innerHTML = `
+            <td>${item.codigo || '-'}</td>
+            <td>${item.descricao || '-'}</td>
+            <td>${item.quantidade || '-'}</td>
+            <td>${item.unidade || '-'}</td>
+            <td>${formatCurrency(item.valorUnitario)}</td>
+            <td>${formatCurrency(item.valorTotal)}</td>
+        `;
+        
+        // Adiciona colunas padronizadas se expandido
+        if (isExpanded) {
+            const aiCells = [
+                item.tipoEmbalagem || '-',
+                item.nomePadronizado || '-',
+                item.marca || '-',
+                item.peso || '-',
+                item.categoria || '-'
+            ];
+            aiCells.forEach(val => {
+                const td = document.createElement('td');
+                td.textContent = val;
+                row.appendChild(td);
+            });
+        }
+        
+        itensDetailTableBody.appendChild(row);
+    });
+    
+    // Atualiza contador
+    if (term) {
+        searchItemsCounter.textContent = `${matchedItems.length} de ${items.length} itens`;
+    } else {
+        searchItemsCounter.textContent = '';
+    }
+}
+
+// Função para expandir a tabela (adiciona colunas da IA)
+function expandTable() {
+    const thead = document.querySelector('#itensDetailTable thead tr');
+    if (!thead || isExpanded) return;
+    
+    // Adiciona cabeçalhos dos campos padronizados
+    ['Tipo Emb.(IA)', 'Nome (IA)', 'Marca (IA)', 'Peso (IA)', 'Categoria (IA)'].forEach(text => {
+        const th = document.createElement('th');
+        th.textContent = text;
+        thead.appendChild(th);
+    });
+    
+    isExpanded = true;
+    if (toggleStdBtn) {
+        toggleStdBtn.textContent = 'Ocultar itens padronizados';
+        toggleStdBtn.dataset.expanded = 'true';
+    }
+    if (padronizarItensBtn) {
+        padronizarItensBtn.style.display = 'none';
+    }
+}
+
+// Função para colapsar a tabela (remove colunas da IA)
+function collapseTable() {
+    const thead = document.querySelector('#itensDetailTable thead tr');
+    if (!thead || !isExpanded) return;
+    
+    // Remove as 5 últimas colunas do thead
+    for (let i = 0; i < 5; i++) {
+        thead.lastElementChild && thead.removeChild(thead.lastElementChild);
+    }
+    
+    isExpanded = false;
+    if (toggleStdBtn) {
+        toggleStdBtn.textContent = 'Mostrar itens padronizados';
+        toggleStdBtn.dataset.expanded = 'false';
+    }
+    
+    // Mantém visibilidade do botão de padronizar conforme existência de itens padronizados
+    const hasAnyStd = Array.isArray(allItems) && allItems.some(it => it.tipoEmbalagem || it.nomePadronizado || it.marca || it.quantidadePadronizada || it.peso || it.categoria);
+    if (padronizarItensBtn) {
+        padronizarItensBtn.style.display = hasAnyStd ? 'none' : 'inline-block';
+    }
+}
+
+// Função para filtrar itens com debounce
+function filterItems() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        const searchTerm = searchItemsInput.value;
+        renderItems(allItems, searchTerm);
+    }, 300); // 300ms de delay
+}
+
 function getNotaIdFromUrl() {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('id');
+}
+
+function getSearchParamsFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return {
+        search: urlParams.get('search') || '',
+        item: urlParams.get('item') || ''
+    };
 }
 
 // --- Funções de Rebusca ---
@@ -264,21 +469,17 @@ function displayNotaDetails(nota) {
     detailTelefone.textContent = formatPhone(nota.telefone);
     detailEmail.textContent = nota.email || '-';
 
+    // Armazena a nota atual globalmente
+    currentNota = nota;
+    
     // Limpa e popula a tabela de itens
     itensDetailTableBody.innerHTML = '';
     if (nota.itens && nota.itens.length > 0) {
-        nota.itens.forEach(item => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${item.codigo || '-'}</td>
-                <td>${item.descricao || '-'}</td>
-                <td>${item.quantidade || '-'}</td>
-                <td>${item.unidade || '-'}</td>
-                <td>${formatCurrency(item.valorUnitario)}</td>
-                <td>${formatCurrency(item.valorTotal)}</td>
-            `;
-            itensDetailTableBody.appendChild(row);
-        });
+        // Armazena os itens globalmente para busca
+        allItems = nota.itens;
+        
+        // Renderiza os itens (respeitando o estado de expansão atual)
+        renderItems(nota.itens, searchItemsInput ? searchItemsInput.value : '');
         
         // Calcula e exibe o total da nota
         const total = calculateTotal(nota.itens);
@@ -287,6 +488,8 @@ function displayNotaDetails(nota) {
         // Esconde a seção de rebusca quando há itens
         rebuscaSection.style.display = 'none';
     } else {
+        allItems = [];
+        currentNota = null;
         const row = document.createElement('tr');
         row.innerHTML = `<td colspan="6">Nenhum item encontrado para esta nota.</td>`;
         itensDetailTableBody.appendChild(row);
@@ -313,21 +516,107 @@ function displayNotaDetails(nota) {
     }
 
     notaDetails.style.display = 'block';
+
+    // Controla exibição do botão Mostrar/Ocultar padronizados
+    const hasAnyStd = Array.isArray(nota.itens) && nota.itens.some(it => it.tipoEmbalagem || it.nomePadronizado || it.marca || it.quantidadePadronizada || it.peso || it.categoria);
+    if (toggleStdBtn) {
+        toggleStdBtn.style.display = hasAnyStd ? 'inline-block' : 'none';
+        toggleStdBtn.textContent = 'Mostrar itens padronizados';
+        toggleStdBtn.dataset.expanded = 'false';
+        toggleStdBtn.onclick = () => togglePadronizados(nota);
+    }
+    // Oculta o botão de padronizar quando já houver itens padronizados
+    if (padronizarItensBtn) {
+        padronizarItensBtn.style.display = hasAnyStd ? 'none' : 'inline-block';
+    }
 }
 
 // --- Inicialização ---
 document.addEventListener('DOMContentLoaded', () => {
     const notaId = getNotaIdFromUrl();
     if (notaId) {
-        fetchNotaDetails(notaId);
+        fetchNotaDetails(notaId).then(() => {
+            // Após carregar os detalhes, verifica se há parâmetros de busca na URL
+            const searchParams = getSearchParamsFromUrl();
+            if (searchParams.search && searchItemsInput) {
+                // Preenche o campo de busca com o termo
+                searchItemsInput.value = searchParams.search;
+                
+                // Dispara a busca automaticamente
+                filterItems();
+                
+                // Scroll suave até a seção de itens
+                setTimeout(() => {
+                    const itensSection = document.querySelector('#itensDetailTable');
+                    if (itensSection) {
+                        itensSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 500);
+            }
+        });
         
         // Event listener para o botão de rebusca
         rebuscaBtn.addEventListener('click', () => {
             rebuscarItens(notaId);
         });
+        
+        // Event listener para busca de itens
+        if (searchItemsInput) {
+            searchItemsInput.addEventListener('input', filterItems);
+        }
+
+        // Event listener para padronização via IA
+        if (padronizarItensBtn) {
+            padronizarItensBtn.addEventListener('click', async () => {
+                try {
+                    padronizarItensBtn.disabled = true;
+                    padronizarItensBtn.textContent = 'Processando...';
+                    if (typeof showInfo === 'function') {
+                        showInfo('Padronização', 'Enviando itens para padronização com IA...');
+                    }
+
+                    const response = await fetch(`/api/notas/padronizar-itens/${notaId}`, { method: 'POST' });
+                    const result = await response.json();
+                    console.log('Padronização - resposta do servidor:', result);
+
+                    if (!response.ok || !result.success) {
+                        throw new Error(result.message || `Erro ${response.status}`);
+                    }
+
+                    if (typeof showSuccess === 'function') {
+                        const detalhes = (result.results || []).slice(0, 5).map(r => `#${r.itemId}: ${r.success ? 'ok' : 'erro'}`).join(', ');
+                        const prefixo = result.partial ? 'Parcial - ' : '';
+                        showSuccess('Itens Padronizados', `${prefixo}${result.message}${detalhes ? `\n${detalhes}...` : ''}`);
+                    }
+                    // Recarrega os detalhes para refletir atualizações
+                    await fetchNotaDetails(notaId);
+                } catch (e) {
+                    console.error('Erro ao padronizar itens:', e);
+                    if (typeof showError === 'function') {
+                        showError('Erro', e.message || 'Falha ao padronizar itens');
+                    }
+                } finally {
+                    padronizarItensBtn.disabled = false;
+                    padronizarItensBtn.textContent = '🤖 Padronizar Itens (IA)';
+                }
+            });
+        }
     } else {
         loadingMessage.style.display = 'none';
         errorMessage.textContent = 'ID da NFC-e não fornecido na URL.';
         errorMessage.style.display = 'block';
     }
 });
+
+// --- Expansão/colapso da tabela com campos padronizados ---
+function togglePadronizados(nota) {
+    if (isExpanded) {
+        collapseTable();
+    } else {
+        expandTable();
+    }
+    
+    // Re-renderiza os itens com o novo estado de expansão
+    const searchTerm = searchItemsInput ? searchItemsInput.value : '';
+    renderItems(allItems, searchTerm);
+}
